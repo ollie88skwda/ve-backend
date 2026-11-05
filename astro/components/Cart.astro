@@ -1,0 +1,6 @@
+---
+import { renderCartShell } from "../../src/render.js";
+import { ensureCatalog } from "../lib.js";
+interface Props { catalog: unknown }
+---
+<Fragment set:html={renderCartShell(ensureCatalog(Astro.props.catalog))} />

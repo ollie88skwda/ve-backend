@@ -1,0 +1,14 @@
+---
+// Page heading + container used by the generated pages. Styled by .ve-page-* classes.
+interface Props { eyebrow?: string; title: string; intro?: string; image?: string }
+const { eyebrow, title, intro, image } = Astro.props;
+---
+<div class="ve-page">
+  <header class="ve-page-head">
+    {image && <img src={image} alt="" class="ve-page-art" />}
+    {eyebrow && <p class="ve-eyebrow">{eyebrow}</p>}
+    <h1>{title}</h1>
+    {intro && <p class="ve-page-intro">{intro}</p>}
+  </header>
+  <slot />
+</div>

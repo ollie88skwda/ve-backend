@@ -1,0 +1,18 @@
+---
+// Minimal layout used when the integration has no `layout` option.
+interface Props { title: string; description?: string }
+const { title, description = "" } = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <slot name="head" />
+  </head>
+  <body style="margin:0;background:var(--ve-background);color:var(--ve-text);font-family:var(--ve-font-body)">
+    <main id="main"><slot /></main>
+  </body>
+</html>

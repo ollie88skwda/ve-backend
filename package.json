@@ -1,0 +1,107 @@
+{
+  "name": "ve-backend",
+  "version": "0.1.0",
+  "description": "Plug-and-play storefront and sales editor for Virtual Enterprise student companies: product cards, product pages, cart, demo or VE Trade Show POS checkout, and a passcode-protected catalog editor. Works with Astro, React/Next or plain HTML.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Oliver Nguyen",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ollie88skwda/ve-backend.git"
+  },
+  "homepage": "https://github.com/ollie88skwda/ve-backend#readme",
+  "bugs": "https://github.com/ollie88skwda/ve-backend/issues",
+  "keywords": [
+    "virtual-enterprise",
+    "storefront",
+    "cart",
+    "checkout",
+    "astro",
+    "astro-component",
+    "web-components",
+    "catalog",
+    "editor"
+  ],
+  "bin": {
+    "ve-backend": "bin/ve-backend.mjs"
+  },
+  "main": "./src/index.js",
+  "types": "./types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./types/index.d.ts",
+      "default": "./src/index.js"
+    },
+    "./core": {
+      "types": "./types/core.d.ts",
+      "default": "./src/core.js"
+    },
+    "./render": {
+      "types": "./types/render.d.ts",
+      "default": "./src/render.js"
+    },
+    "./runtime": {
+      "types": "./types/runtime.d.ts",
+      "default": "./src/runtime.js"
+    },
+    "./styles.css": "./src/styles.css",
+    "./react": {
+      "types": "./types/react.d.ts",
+      "default": "./react/index.js"
+    },
+    "./astro": {
+      "types": "./types/astro.d.ts",
+      "default": "./astro/index.js"
+    },
+    "./astro/integration": {
+      "types": "./types/astro.d.ts",
+      "default": "./astro/integration.js"
+    },
+    "./astro/components/*": "./astro/components/*",
+    "./editor": "./editor/server.mjs",
+    "./templates/*": "./templates/*",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "src",
+    "astro",
+    "react",
+    "editor",
+    "bin",
+    "templates",
+    "types",
+    "examples",
+    "README.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./src/runtime.js",
+    "*.css"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.mjs",
+    "editor:demo": "node bin/ve-backend.mjs editor --root examples/demo-site",
+    "demo": "astro dev --root examples/demo-site"
+  },
+  "peerDependencies": {
+    "astro": ">=4",
+    "react": ">=18"
+  },
+  "peerDependenciesMeta": {
+    "astro": {
+      "optional": true
+    },
+    "react": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=18.17"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "devDependencies": {
+    "astro": "^7.4.4"
+  }
+}

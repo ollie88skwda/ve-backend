@@ -1,0 +1,7 @@
+---
+import { renderProductPage } from "../../src/render.js";
+import { ensureCatalog } from "../lib.js";
+interface Props { catalog: unknown; slug: string; crumbs?: boolean; faqs?: { q: string; a: string }[]; cardStyle?: "arch" | "rounded" | "flat" }
+const { catalog: raw, slug, ...opts } = Astro.props;
+---
+<Fragment set:html={renderProductPage(ensureCatalog(raw), slug, opts)} />

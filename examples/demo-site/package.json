@@ -1,0 +1,1 @@
+{ "name": "ve-backend-demo-site", "private": true, "type": "module", "ve-backend": { "catalog": "src/data/ve.catalog.json", "siteUrl": "http://localhost:4321/" } }

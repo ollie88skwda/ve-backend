@@ -1,0 +1,12 @@
+---
+import { catalog as raw, Layout, layoutProps } from "virtual:ve-backend/site";
+import VeHead from "../components/VeHead.astro";
+import Cart from "../components/Cart.astro";
+import ShopFrame from "../components/ShopFrame.astro";
+import { ensureCatalog } from "../lib.js";
+const catalog = ensureCatalog(raw);
+---
+<Layout {...layoutProps} title={`Cart | ${catalog.company.name}`} description="Your cart.">
+  <VeHead catalog={catalog} />
+  <ShopFrame title="Your cart"><Cart catalog={catalog} /></ShopFrame>
+</Layout>

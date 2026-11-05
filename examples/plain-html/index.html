@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shop</title>
+  <!-- ve-backend without a build step. Copy node_modules/ve-backend/src to /ve/ (or use a CDN like jsDelivr: https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.0/src/). -->
+  <meta name="ve-catalog" content="/src/data/ve.catalog.json">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.0/src/styles.css">
+  <script type="module" src="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.0/src/runtime.js"></script>
+</head>
+<body style="margin:0;background:var(--ve-background);color:var(--ve-text);font-family:var(--ve-font-body)">
+  <header style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.5rem">
+    <a href="/">Home</a>
+    <ve-cart-button><a class="ve-cart-button" href="/cart.html" data-ve-cart-link aria-label="Cart"><span class="ve-cart-label">Cart</span><span class="ve-cart-count" data-ve-count hidden>0</span></a></ve-cart-button>
+  </header>
+  <main class="ve-page">
+    <header class="ve-page-head"><h1>Shop</h1></header>
+    <!-- Client-rendered grid. Other elements: <ve-product-card slug="...">, <ve-product-page slug="...">, <ve-cart>, <ve-checkout>. -->
+    <ve-product-grid></ve-product-grid>
+  </main>
+</body>
+</html>

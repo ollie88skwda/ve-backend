@@ -1,0 +1,12 @@
+import type { ReactNode, ReactElement } from "react";
+import type { Catalog, Product } from "./core";
+import type { CardOptions, GridOptions } from "./render";
+export function VeProvider(props: { catalog: Catalog; children?: ReactNode }): ReactElement;
+export function ProductCard(props: { catalog: Catalog; product: Product } & CardOptions): ReactElement;
+export function ProductGrid(props: { catalog: Catalog } & GridOptions): ReactElement;
+export function ShopIndex(props: { catalog: Catalog } & GridOptions & { tabs?: boolean }): ReactElement;
+export function CategoryPage(props: { catalog: Catalog; slug: string } & GridOptions): ReactElement;
+export function ProductPage(props: { catalog: Catalog; slug: string; crumbs?: boolean }): ReactElement;
+export function CartButton(props: { catalog: Catalog; label?: string; className?: string }): ReactElement;
+export function Cart(props: { catalog: Catalog }): ReactElement;
+export function Checkout(props: { catalog: Catalog }): ReactElement;

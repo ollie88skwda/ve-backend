@@ -1,0 +1,26 @@
+{
+  "version": 1,
+  "company": { "name": "Your VE Company", "tagline": "What you sell, in one line", "currency": "USD", "locale": "en-US", "url": "" },
+  "shop": { "title": "Shop", "intro": "Everything we make, in one place.", "basePath": "/shop/", "cartPath": "/cart/", "checkoutPath": "/checkout/", "allLabel": "All products" },
+  "announcement": { "enabled": false, "text": "", "linkLabel": "", "link": "" },
+  "contact": { "email": "hello@example.com", "phone": "", "location": "", "hours": "", "instagram": "" },
+  "checkout": { "mode": "demo", "posUrl": "", "orderPrefix": "VE", "posLabel": "Pay in VE Trade Show POS", "note": "Educational Virtual Enterprise store. No real payment is taken and nothing ships." },
+  "theme": {
+    "colors": { "background": "#ffffff", "surface": "#f5f3ef", "text": "#24262b", "muted": "#5e626a", "heading": "#24262b", "accent": "#24262b", "accentText": "#ffffff", "accentHover": "#4a4f58", "badge": "#24262b", "badgeText": "#ffffff", "sale": "#a12620", "border": "#dcdad5", "focus": "#24262b" },
+    "fonts": { "display": "Georgia, serif", "body": "system-ui, sans-serif", "accent": "Georgia, serif" },
+    "fontFaces": [],
+    "radius": "16px",
+    "card": "rounded",
+    "imageFit": "cover",
+    "imageScale": 1,
+    "button": "pill",
+    "tints": { "sand": "#f1ece2", "sky": "#e3eef7", "mint": "#e3f1e8" },
+    "motion": true
+  },
+  "categories": [
+    { "slug": "featured", "name": "Featured", "eyebrow": "Best sellers", "title": "", "description": "Our most popular products.", "note": "", "image": "", "tint": "", "visible": true }
+  ],
+  "products": [
+    { "slug": "starter-product", "name": "Starter Product", "category": "featured", "price": 24.99, "badge": "New", "offer": "", "tagline": "Replace this with your first product.", "description": "Describe the product in a few sentences. Open the sales editor (npm run editor) to change everything without touching code.", "images": [], "tint": "sand", "features": ["Edit me in the sales editor"], "options": [], "checkout": "", "posUrl": "", "featured": true, "visible": true, "placeholder": true }
+  ]
+}

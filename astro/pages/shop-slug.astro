@@ -1,0 +1,27 @@
+---
+import { catalog as raw, Layout, layoutProps } from "virtual:ve-backend/site";
+import VeHead from "../components/VeHead.astro";
+import CategoryPage from "../components/CategoryPage.astro";
+import ProductPage from "../components/ProductPage.astro";
+import ShopFrame from "../components/ShopFrame.astro";
+import { ensureCatalog } from "../lib.js";
+import { findCategory, findProduct, getShopPaths } from "../../src/core.js";
+export function getStaticPaths() {
+  return getShopPaths(ensureCatalog(raw));
+}
+const catalog = ensureCatalog(raw);
+const { kind, slug } = Astro.props;
+const category = kind === "category" ? findCategory(catalog, slug) : null;
+const product = kind === "product" ? findProduct(catalog, slug) : null;
+const title = `${(category || product).name} | ${catalog.company.name}`;
+const description = category ? category.description : product.tagline || product.description;
+---
+<Layout {...layoutProps} title={title} description={description}>
+  <VeHead catalog={catalog} />
+  {category && (
+    <ShopFrame eyebrow={category.eyebrow} title={category.title || category.name} intro={category.description}>
+      <CategoryPage catalog={catalog} slug={slug} />
+    </ShopFrame>
+  )}
+  {product && <div class="ve-page"><ProductPage catalog={catalog} slug={slug} /></div>}
+</Layout>

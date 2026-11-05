@@ -1,0 +1,14 @@
+---
+// Put once per page that shows store UI (in <head> or at the top of <body>).
+// Adds theme CSS variables and the catalog data island the browser runtime reads.
+import "../../src/styles.css";
+import { publicCatalog, themeCss } from "../../src/core.js";
+import { renderDataScript } from "../../src/render.js";
+import { ensureCatalog } from "../lib.js";
+interface Props { catalog: unknown; selector?: string; theme?: boolean }
+const { catalog: raw, selector = ":root", theme = true } = Astro.props;
+const catalog = ensureCatalog(raw);
+---
+{theme && <style is:inline set:html={themeCss(catalog.theme, selector)} />}
+<Fragment set:html={renderDataScript(publicCatalog(catalog))} />
+<script>import "../../src/runtime.js";</script>

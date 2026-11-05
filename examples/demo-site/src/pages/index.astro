@@ -1,0 +1,10 @@
+---
+import Layout from "../../../../astro/components/DefaultLayout.astro";
+import { VeHead, ProductGrid, CartButton } from "../../../../astro/index.js";
+import catalog from "../data/ve.catalog.json";
+---
+<Layout title={catalog.company.name}>
+  <VeHead catalog={catalog} />
+  <header style="display:flex;justify-content:space-between;padding:1rem 1.5rem"><strong>{catalog.company.name}</strong><CartButton catalog={catalog} /></header>
+  <div class="ve-page"><ProductGrid catalog={catalog} featured /></div>
+</Layout>

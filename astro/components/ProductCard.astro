@@ -1,0 +1,11 @@
+---
+import { findProduct } from "../../src/core.js";
+import { renderProductCard } from "../../src/render.js";
+import { ensureCatalog } from "../lib.js";
+interface Props { catalog: unknown; slug: string; headingLevel?: number; cardStyle?: "arch" | "rounded" | "flat"; buyNow?: boolean; reveal?: boolean; className?: string }
+const { catalog: raw, slug, ...opts } = Astro.props;
+const catalog = ensureCatalog(raw);
+const product = findProduct(catalog, slug);
+if (!product) throw new Error(`VE_PRODUCT_NOT_FOUND: no product with slug "${slug}" in the catalog.`);
+---
+<Fragment set:html={renderProductCard(catalog, product, opts)} />

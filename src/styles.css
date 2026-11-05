@@ -1,0 +1,247 @@
+/* ve-backend storefront styles. Every brand value is a --ve-* custom property (see themeCss()).
+   Store layout adapted from Hangr's store.module.css. Override any variable on :root or .ve-scope. */
+:root {
+  --ve-background: #fff; --ve-surface: #f6f6f4; --ve-text: #1f2328; --ve-muted: #5b6168; --ve-heading: #1f2328;
+  --ve-accent: #1f2328; --ve-accent-text: #fff; --ve-accent-hover: #3b4048; --ve-badge: #1f2328; --ve-badge-text: #fff;
+  --ve-sale: #a12620; --ve-border: #d9dcdf; --ve-focus: #1f2328;
+  --ve-font-display: Georgia, serif; --ve-font-body: system-ui, sans-serif; --ve-font-accent: Georgia, serif;
+  --ve-radius: 16px; --ve-button-radius: 999px; --ve-image-fit: cover; --ve-image-scale: 1;
+  --ve-tint-default: #f1efe9;
+  --ve-gap: clamp(1.25rem, 3vw, 2.5rem);
+  --ve-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --ve-sticky-top: 6rem;
+}
+
+.ve-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.ve-icon { width: 1.1em; height: 1.1em; flex: none; display: inline-block; vertical-align: middle; }
+
+/* ---------- Buttons and links ---------- */
+.ve-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+  min-height: 48px; padding: 0.8rem 1.6rem; border: 1px solid var(--ve-accent); border-radius: var(--ve-button-radius);
+  background: var(--ve-accent); color: var(--ve-accent-text); font: 600 1rem/1.2 var(--ve-font-body); letter-spacing: 0.02em;
+  text-decoration: none; white-space: nowrap; cursor: pointer;
+  transition: background-color .25s ease, color .25s ease, border-color .25s ease, box-shadow .25s ease, transform .2s var(--ve-ease);
+}
+.ve-button:hover { background: var(--ve-accent-hover); border-color: var(--ve-accent-hover); box-shadow: 0 .6rem 1.4rem -.6rem color-mix(in srgb, var(--ve-accent-hover) 70%, transparent); }
+.ve-button:active { transform: translateY(1px) scale(.99); }
+.ve-button .ve-icon { transition: transform .3s var(--ve-ease); }
+.ve-button:hover .ve-icon:last-child { transform: translateX(.2rem); }
+.ve-button--ghost { background: transparent; color: var(--ve-accent); }
+.ve-button--ghost:hover { background: var(--ve-accent); color: var(--ve-accent-text); }
+.ve-button--wide { width: 100%; }
+.ve-button.is-added { background: var(--ve-accent-hover); border-color: var(--ve-accent-hover); color: var(--ve-accent-text); }
+.ve-button:focus-visible, .ve-text-link:focus-visible, .ve-card a:focus-visible, .ve-tabs a:focus-visible, .ve-cart-button:focus-visible, .ve-remove:focus-visible {
+  outline: 2px solid var(--ve-focus); outline-offset: 3px;
+}
+.ve-text-link { display: inline-flex; align-items: center; min-height: 44px; color: inherit; font-size: 1rem; text-decoration: underline; text-decoration-color: color-mix(in srgb, var(--ve-accent) 40%, transparent); text-decoration-thickness: 1px; text-underline-offset: .3em; }
+.ve-text-link:hover { text-decoration-color: currentColor; }
+.ve-eyebrow { margin: 0 0 .5rem; font-family: var(--ve-font-accent); font-style: italic; font-size: clamp(1.05rem, 1.5vw, 1.25rem); color: var(--ve-text); }
+.ve-subhead { margin: 0 0 1rem; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(1.6rem, 2.6vw, 2.25rem); line-height: 1.1; color: var(--ve-heading); }
+.ve-note, .ve-hint { margin: 0; font-size: .875rem; color: var(--ve-muted); }
+.ve-muted { margin: .15rem 0; color: var(--ve-muted); font-size: .95rem; }
+.ve-status { margin: 0; min-height: 1.5rem; font-size: .95rem; }
+.ve-status a { color: inherit; font-weight: 600; }
+
+/* ---------- Grid ---------- */
+.ve-grid { --ve-columns: 3; list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(var(--ve-columns), minmax(0, 1fr)); gap: clamp(2rem, 4vw, 3rem) var(--ve-gap); }
+.ve-grid > li { display: flex; min-width: 0; }
+
+/* ---------- Card ---------- */
+.ve-card { position: relative; display: flex; flex-direction: column; width: 100%; color: var(--ve-text); }
+.ve-card-media { position: relative; display: block; text-decoration: none; }
+.ve-visual { --ve-tint: var(--ve-tint-default); position: relative; display: grid; place-items: center; overflow: hidden; background: var(--ve-tint); aspect-ratio: 4 / 5; border-radius: var(--ve-radius); isolation: isolate; }
+.ve-visual img { width: calc(100% * var(--ve-image-scale)); height: calc(100% * var(--ve-image-scale)); object-fit: var(--ve-image-fit); display: block; transition: transform .8s var(--ve-ease); }
+.ve-visual-text { padding: 1.5rem; text-align: center; font-family: var(--ve-font-display); font-size: clamp(1.4rem, 2.4vw, 2rem); line-height: 1.1; color: var(--ve-heading); }
+.ve-card--arch .ve-visual { border-radius: 100vw 100vw 0 0; }
+.ve-card--arch .ve-visual img { margin-top: calc((1 - var(--ve-image-scale)) * 50%); }
+.ve-card--flat .ve-visual { border-radius: 0; }
+.ve-card--rounded { background: var(--ve-background); border: 1px solid var(--ve-border); border-radius: calc(var(--ve-radius) + 6px); padding: .5rem; transition: box-shadow .4s var(--ve-ease), transform .5s var(--ve-ease), border-color .3s; }
+.ve-card--rounded:hover { box-shadow: 0 1.5rem 3rem -1.5rem color-mix(in srgb, var(--ve-text) 35%, transparent); border-color: color-mix(in srgb, var(--ve-border) 50%, var(--ve-accent)); }
+.ve-card--rounded .ve-card-body { padding: 1rem .75rem .75rem; }
+.ve-card--arch .ve-card-media, .ve-card--flat .ve-card-media { transition: transform .6s var(--ve-ease); }
+.ve-card--arch:hover .ve-card-media, .ve-card--flat:hover .ve-card-media { transform: translateY(-.4rem); }
+.ve-card:hover .ve-visual img { transform: scale(1.06) rotate(-2deg); }
+.ve-card--flat:hover .ve-visual img, .ve-card--rounded:hover .ve-visual img { transform: scale(1.05); }
+.ve-badge {
+  position: absolute; z-index: 2; top: 1rem; right: 1rem; padding: .35rem .85rem; border-radius: 999px;
+  background: var(--ve-badge); color: var(--ve-badge-text); font: 600 .8125rem/1.3 var(--ve-font-body); letter-spacing: .04em;
+}
+.ve-card--arch .ve-badge { top: 18%; right: 6%; rotate: 8deg; animation: ve-bob 3s ease-in-out infinite; }
+@keyframes ve-bob { 50% { translate: 0 -.3rem; } }
+.ve-badge--inline { position: static; display: inline-block; margin: 0 0 .75rem; rotate: none; animation: none; }
+.ve-card-body { display: flex; flex-direction: column; flex: 1; gap: .35rem; padding-top: 1.25rem; }
+.ve-card-title { margin: 0; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(1.5rem, 2.2vw, 1.9rem); line-height: 1.08; letter-spacing: -.01em; color: var(--ve-heading); text-wrap: balance; }
+.ve-card-title a { color: inherit; text-decoration: none; }
+.ve-card-title a::after { content: ""; position: absolute; inset: 0; z-index: 1; }
+.ve-card:hover .ve-card-title a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: .18em; }
+.ve-card-meta { margin: 0; font-size: 1rem; color: var(--ve-text); }
+.ve-card-meta strong { color: var(--ve-heading); font-weight: 600; }
+.ve-card-each { margin: 0; font-size: .9375rem; color: var(--ve-muted); }
+.ve-card-actions { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: .6rem; margin-top: auto; padding-top: 1rem; }
+.ve-card-actions .ve-button { min-height: 44px; padding: .65rem 1.25rem; font-size: .9375rem; }
+
+/* ---------- Price ---------- */
+.ve-price { display: flex; flex-wrap: wrap; align-items: center; gap: .35rem .7rem; margin: .35rem 0 0; font-family: var(--ve-font-display); font-size: 1.6rem; line-height: 1.1; font-variant-numeric: tabular-nums; color: var(--ve-text); }
+.ve-price--lg { font-size: clamp(2rem, 3vw, 2.5rem); margin-top: 1rem; }
+.ve-price-was { font-family: var(--ve-font-body); font-size: .55em; color: var(--ve-muted); }
+.ve-offer { padding: .15rem .7rem; border: 1px solid currentColor; border-radius: 999px; font-family: var(--ve-font-accent); font-style: italic; font-size: .9375rem; line-height: 1.4; color: var(--ve-sale); }
+
+/* ---------- Tabs and sections ---------- */
+.ve-tabs ul { display: flex; flex-wrap: wrap; justify-content: center; gap: .35rem; list-style: none; margin: 0 auto clamp(2rem, 5vw, 3.5rem); padding: .3rem; width: fit-content; max-width: 100%; border: 1px solid var(--ve-border); border-radius: 999px; background: var(--ve-background); }
+.ve-tabs a { display: inline-flex; align-items: center; min-height: 44px; padding: 0 1.15rem; border-radius: 999px; color: var(--ve-text); font: 600 .95rem/1 var(--ve-font-body); text-decoration: none; transition: background-color .2s, color .2s; }
+.ve-tabs a:hover { background: var(--ve-surface); }
+.ve-tabs a[aria-current="page"] { background: var(--ve-accent); color: var(--ve-accent-text); }
+.ve-section + .ve-section { margin-top: clamp(4rem, 8vw, 6rem); }
+.ve-section-head { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: end; gap: .5rem 2rem; margin-bottom: clamp(1.5rem, 3.5vw, 2.5rem); }
+.ve-section-head h2 { margin: 0; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(2.25rem, 4.5vw, 3.5rem); line-height: 1.05; color: var(--ve-heading); }
+.ve-section-lede { margin: .6rem 0 0; max-width: 52ch; color: var(--ve-text); }
+.ve-category-note { max-width: 44rem; margin: 0 auto 2rem; padding: .9rem 1.25rem; border-radius: var(--ve-radius); background: var(--ve-surface); text-align: center; font-size: .95rem; }
+.ve-empty-note { color: var(--ve-muted); }
+
+/* ---------- Product page ---------- */
+.ve-crumbs ol { display: flex; flex-wrap: wrap; gap: .4rem; list-style: none; margin: 0 0 1.5rem; padding: 0; font-size: .9rem; color: var(--ve-muted); }
+.ve-crumbs li + li::before { content: "›"; margin-right: .4rem; }
+.ve-crumbs a { color: inherit; }
+.ve-detail { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: 2rem clamp(2rem, 6vw, 5rem); align-items: start; }
+.ve-gallery { position: sticky; top: var(--ve-sticky-top); display: grid; gap: .75rem; }
+.ve-visual--hero { aspect-ratio: 1 / 1; }
+.ve-card--arch-page .ve-visual--hero, [data-ve-card-style="arch"] .ve-visual--hero { border-radius: 100vw 100vw 0 0; aspect-ratio: 4 / 5; }
+.ve-thumbs { display: flex; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+.ve-thumbs button { width: 4.5rem; aspect-ratio: 1; padding: 0; border: 2px solid transparent; border-radius: calc(var(--ve-radius) / 2); overflow: hidden; background: var(--ve-surface); cursor: pointer; }
+.ve-thumbs button[aria-current="true"] { border-color: var(--ve-accent); }
+.ve-thumbs img { width: 100%; height: 100%; object-fit: cover; }
+.ve-buycol { display: grid; gap: 1.5rem; }
+.ve-title { margin: 0; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(2.5rem, 5vw, 4rem); line-height: 1; letter-spacing: -.015em; color: var(--ve-heading); text-wrap: balance; }
+.ve-tagline { margin: .75rem 0 0; font-family: var(--ve-font-accent); font-style: italic; font-size: clamp(1.2rem, 2vw, 1.5rem); line-height: 1.3; color: var(--ve-heading); }
+.ve-description { display: grid; gap: .75rem; max-width: 55ch; }
+.ve-description p { margin: 0; }
+.ve-buybox { display: grid; gap: 1.25rem; padding: clamp(1.25rem, 3vw, 1.75rem); border-radius: var(--ve-radius); background: var(--ve-surface); }
+.ve-buy-actions { display: grid; gap: .6rem; }
+.ve-field { display: grid; gap: .4rem; min-width: 0; }
+.ve-label { font-weight: 600; font-size: .95rem; }
+.ve-options { border: 0; margin: 0; padding: 0; min-width: 0; }
+.ve-options legend { padding: 0; margin-bottom: .5rem; font-weight: 600; font-size: .95rem; }
+.ve-option-list { display: flex; flex-wrap: wrap; gap: .5rem; }
+.ve-option { position: relative; display: inline-flex; }
+.ve-option input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+.ve-option span { display: inline-flex; align-items: center; gap: .35rem; min-height: 44px; padding: .4rem 1rem; border: 1px solid var(--ve-border); border-radius: 999px; background: var(--ve-background); font-size: .95rem; transition: border-color .2s, background-color .2s; }
+.ve-option small { color: var(--ve-muted); }
+.ve-option input:checked + span { border-color: var(--ve-accent); box-shadow: inset 0 0 0 1px var(--ve-accent); }
+.ve-option input:focus-visible + span { outline: 2px solid var(--ve-focus); outline-offset: 2px; }
+.ve-stepper { display: inline-grid; grid-template-columns: 44px minmax(2.5rem, auto) 44px; align-items: center; justify-self: start; border: 1px solid var(--ve-border); border-radius: 999px; background: var(--ve-background); }
+.ve-stepper button { min-height: 44px; border: 0; border-radius: 999px; background: transparent; color: var(--ve-text); font-size: 1.25rem; cursor: pointer; }
+.ve-stepper button:hover:not(:disabled) { background: var(--ve-surface); }
+.ve-stepper button:disabled { opacity: .35; cursor: not-allowed; }
+.ve-stepper button:focus-visible { outline: 2px solid var(--ve-focus); outline-offset: -2px; }
+.ve-stepper output { text-align: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ve-features ul { display: grid; gap: .5rem; list-style: none; margin: 0; padding: 0; }
+.ve-features li { display: flex; gap: .6rem; align-items: flex-start; }
+.ve-features .ve-icon { margin-top: .2em; color: var(--ve-accent); }
+.ve-faq details { border-top: 1px solid var(--ve-border); }
+.ve-faq details:last-child { border-bottom: 1px solid var(--ve-border); }
+.ve-faq summary { display: flex; justify-content: space-between; align-items: center; gap: 1rem; min-height: 56px; padding: .75rem 0; font-weight: 600; cursor: pointer; list-style: none; }
+.ve-faq summary::-webkit-details-marker { display: none; }
+.ve-faq p { margin: 0 0 1.25rem; color: var(--ve-muted); max-width: 60ch; }
+.ve-plus { position: relative; flex: none; width: 14px; height: 14px; transition: transform .2s ease-out; }
+.ve-plus::before, .ve-plus::after { content: ""; position: absolute; left: 0; top: 50%; width: 100%; height: 1.5px; margin-top: -.75px; background: currentColor; }
+.ve-plus::after { transform: rotate(90deg); }
+.ve-faq details[open] .ve-plus { transform: rotate(45deg); }
+.ve-related { margin-top: clamp(4rem, 8vw, 6rem); }
+.ve-stickybar { display: none; }
+
+/* ---------- Cart button ---------- */
+ve-cart-button { display: inline-flex; }
+.ve-cart-button { position: relative; display: inline-flex; align-items: center; gap: .4rem; min-height: 44px; padding: 0 .6rem; color: inherit; font: 600 .95rem/1 var(--ve-font-body); text-decoration: none; border-radius: 999px; transition: background-color .2s; }
+.ve-cart-button:hover { background: color-mix(in srgb, var(--ve-accent) 8%, transparent); }
+.ve-cart-button .ve-icon { width: 1.4rem; height: 1.4rem; }
+.ve-cart-count { display: inline-grid; place-items: center; min-width: 1.35rem; height: 1.35rem; padding: 0 .35rem; border-radius: 999px; background: var(--ve-accent); color: var(--ve-accent-text); font-size: .75rem; font-variant-numeric: tabular-nums; }
+.ve-cart-count[hidden] { display: none; }
+
+/* ---------- Cart and checkout ---------- */
+.ve-cart-host { display: block; }
+.ve-cart-placeholder { min-height: 20rem; }
+.ve-empty { display: grid; gap: 1.25rem; justify-items: center; padding: 3rem 0; text-align: center; }
+.ve-empty p { margin: 0; font-size: 1.15rem; }
+.ve-cart-layout, .ve-checkout-layout { display: grid; grid-template-columns: minmax(0, 1fr) 22rem; gap: 2rem clamp(2rem, 5vw, 4rem); align-items: start; }
+.ve-lines { list-style: none; margin: 0; padding: 0; }
+.ve-line { display: grid; grid-template-columns: 6rem minmax(0, 1fr) auto; gap: 1rem 1.5rem; align-items: center; padding: 1.25rem 0; border-top: 1px solid var(--ve-border); }
+.ve-line:last-child { border-bottom: 1px solid var(--ve-border); }
+.ve-visual--thumb { aspect-ratio: 1; border-radius: calc(var(--ve-radius) / 1.5); }
+.ve-visual--thumb .ve-visual-text { font-size: 1rem; padding: .5rem; }
+.ve-line-title { margin: 0; font-family: var(--ve-font-display); font-weight: 400; font-size: 1.4rem; line-height: 1.1; }
+.ve-line-title a { color: inherit; text-decoration: none; }
+.ve-line-title a:hover { text-decoration: underline; }
+.ve-line-controls { display: grid; justify-items: end; gap: .4rem; }
+.ve-line-total { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ve-remove { min-height: 44px; padding: 0; border: 0; background: none; color: inherit; font-size: .9rem; text-decoration: underline; cursor: pointer; }
+.ve-summary { position: sticky; top: var(--ve-sticky-top); display: grid; gap: 1rem; padding: clamp(1.25rem, 3vw, 1.75rem); border-radius: var(--ve-radius); background: var(--ve-surface); }
+.ve-totals { margin: 0; display: grid; gap: .4rem; }
+.ve-totals div { display: flex; justify-content: space-between; }
+.ve-totals dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.ve-savings { color: var(--ve-sale); }
+.ve-summary-lines { list-style: none; margin: 0; padding: 0; display: grid; gap: .75rem; }
+.ve-summary-lines li { display: flex; justify-content: space-between; gap: 1rem; font-variant-numeric: tabular-nums; }
+.ve-summary-lines li > span:first-child { display: grid; }
+.ve-summary-lines small { color: var(--ve-muted); }
+.ve-total-row { display: flex; justify-content: space-between; margin: 0; padding-top: .75rem; border-top: 1px solid var(--ve-border); font-weight: 600; font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+.ve-checkout-main { display: grid; gap: 2rem; }
+.ve-form { display: grid; gap: 1.5rem; }
+.ve-group { display: grid; gap: 1rem; min-width: 0; margin: 0; padding: 1.25rem; border: 1px solid var(--ve-border); border-radius: var(--ve-radius); }
+.ve-group legend { padding: 0 .5rem; font-weight: 600; }
+.ve-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 1rem; }
+.ve-row--2 { grid-template-columns: 1fr 1fr; }
+.ve-input { width: 100%; min-height: 48px; padding: .65rem .85rem; border: 1px solid color-mix(in srgb, var(--ve-text) 40%, transparent); border-radius: 12px; background: var(--ve-background); color: var(--ve-text); font: inherit; font-size: 1rem; }
+.ve-input:focus-visible { outline: 2px solid var(--ve-focus); outline-offset: 1px; }
+.ve-input[aria-invalid="true"] { border: 2px solid var(--ve-sale); }
+.ve-error { margin: 0; color: var(--ve-sale); font-size: .9rem; font-weight: 600; }
+.ve-submit-row { display: grid; gap: .75rem; justify-items: start; }
+.ve-or { display: flex; align-items: center; gap: 1rem; margin: 0; color: var(--ve-muted); font-family: var(--ve-font-accent); font-style: italic; }
+.ve-or::before, .ve-or::after { content: ""; flex: 1; border-top: 1px solid var(--ve-border); }
+.ve-pos { display: grid; gap: 1rem; padding: clamp(1.25rem, 3vw, 1.75rem); border-radius: var(--ve-radius); background: var(--ve-surface); }
+.ve-pos p { margin: 0; }
+.ve-pos-steps { margin: 0; padding-left: 1.25rem; display: grid; gap: .35rem; }
+.ve-confirm { display: grid; gap: 1rem; max-width: 38rem; margin-inline: auto; padding: clamp(1.5rem, 4vw, 2.5rem); border-radius: var(--ve-radius); background: var(--ve-surface); }
+.ve-confirm h2 { margin: 0; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(2.25rem, 4vw, 3rem); color: var(--ve-heading); }
+.ve-confirm h2:focus:not(:focus-visible) { outline: none; }
+.ve-confirm p { margin: 0; }
+.ve-confirm .ve-button { justify-self: start; }
+.ve-order-number { font-size: 1.15rem; font-variant-numeric: tabular-nums; }
+
+/* ---------- Motion ---------- */
+.ve-will-reveal { opacity: 0; transform: translateY(40px) scale(.97); }
+.ve-will-reveal.is-in { opacity: 1; transform: none; transition: opacity .9s var(--ve-ease), transform .9s var(--ve-ease); transition-delay: calc(min(var(--ve-i, 0), 6) * 90ms); }
+.ve-grid > li { --ve-i: inherit; }
+.ve-grid > li > .ve-will-reveal.is-in { transition-delay: calc(min(var(--ve-i, 0), 6) * 90ms); }
+
+@media (max-width: 1020px) { .ve-grid { --ve-columns: 2 !important; } }
+@media (max-width: 900px) {
+  .ve-detail, .ve-cart-layout, .ve-checkout-layout { grid-template-columns: minmax(0, 1fr); }
+  .ve-gallery, .ve-summary { position: static; }
+  .ve-checkout-layout .ve-summary { order: -1; }
+}
+@media (max-width: 640px) {
+  .ve-grid { --ve-columns: 1 !important; gap: 2.5rem; }
+  .ve-row { grid-template-columns: 1fr 1fr; } .ve-row > :first-child { grid-column: 1 / -1; }
+  .ve-line { grid-template-columns: 4.5rem minmax(0, 1fr); }
+  .ve-line-controls { grid-column: 1 / -1; grid-template-columns: auto 1fr auto; align-items: center; justify-items: start; }
+  .ve-line-total { justify-self: end; }
+  .ve-tabs ul { border-radius: var(--ve-radius); }
+  .ve-cart-label { display: none; }
+  .ve-stickybar { position: fixed; z-index: 40; left: 0; right: 0; bottom: 0; display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: .75rem 1.25rem calc(.75rem + env(safe-area-inset-bottom)); background: var(--ve-background); border-top: 1px solid var(--ve-border); transform: translateY(110%); visibility: hidden; transition: transform .3s var(--ve-ease), visibility .3s; }
+  .ve-stickybar > div { display: grid; line-height: 1.3; }
+  .ve-stickybar.is-visible { transform: none; visibility: visible; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ve-card, .ve-card *, .ve-button, .ve-button *, .ve-stickybar, .ve-plus { transition: none !important; animation: none !important; }
+  .ve-card:hover .ve-visual img, .ve-card:hover .ve-card-media { transform: none !important; }
+  .ve-will-reveal { opacity: 1; transform: none; }
+}
+
+/* ---------- Generated page frame ---------- */
+.ve-page { max-width: var(--ve-max, 76rem); margin-inline: auto; padding: clamp(3rem, 7vw, 6rem) var(--ve-gutter, clamp(1.25rem, 4vw, 3rem)) clamp(4rem, 9vw, 8rem); }
+.ve-page-head { max-width: 44rem; margin: 0 auto clamp(2rem, 5vw, 3.5rem); text-align: center; }
+.ve-page-head h1 { margin: 0 0 1rem; font-family: var(--ve-font-display); font-weight: 400; font-size: clamp(3rem, 7vw, 5.5rem); line-height: 1; letter-spacing: -.015em; color: var(--ve-heading); text-wrap: balance; }
+.ve-page-intro { margin: 0 auto; max-width: 36rem; font-family: var(--ve-font-accent); font-style: italic; font-size: clamp(1.25rem, 2.4vw, 1.75rem); line-height: 1.3; color: var(--ve-heading); }
+.ve-page-art { width: clamp(5rem, 9vw, 7rem); height: auto; margin: 0 auto 1.5rem; display: block; }
+.ve-placeholder { display: inline-flex; align-self: flex-start; margin: .35rem 0 0; padding: .15rem .6rem; border: 1px dashed currentColor; border-radius: 999px; font-size: .78rem; letter-spacing: .02em; color: var(--ve-muted); }

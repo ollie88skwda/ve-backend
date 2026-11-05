@@ -1,0 +1,7 @@
+---
+import { renderShopIndex } from "../../src/render.js";
+import { ensureCatalog } from "../lib.js";
+interface Props { catalog: unknown; tabs?: boolean; cardStyle?: "arch" | "rounded" | "flat"; reveal?: boolean }
+const { catalog: raw, ...opts } = Astro.props;
+---
+<div class="ve-shop"><Fragment set:html={renderShopIndex(ensureCatalog(raw), opts)} /></div>

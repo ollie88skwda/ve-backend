@@ -1,0 +1,9 @@
+---
+import Layout from "ve-backend/astro/components/DefaultLayout.astro";
+import { VeHead, Checkout } from "ve-backend/astro";
+import catalog from "__CATALOG__";
+---
+<Layout title={`Checkout | ${catalog.company.name}`} description="Checkout.">
+  <VeHead catalog={catalog} />
+  <div class="ve-page"><header class="ve-page-head"><h1>Checkout</h1></header><Checkout catalog={catalog} /></div>
+</Layout>
