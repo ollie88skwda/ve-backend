@@ -1,6 +1,6 @@
 {
   "name": "ve-backend",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Plug-and-play storefront and sales editor for Virtual Enterprise student companies: product cards, product pages, cart, demo or VE Trade Show POS checkout, and a passcode-protected catalog editor. Works with Astro, React/Next or plain HTML.",
   "type": "module",
   "license": "MIT",
