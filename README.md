@@ -100,8 +100,8 @@ The wrappers render the same HTML as Astro and start the browser runtime on the 
 
 ```html
 <meta name="ve-catalog" content="/ve.catalog.json">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.0/src/styles.css">
-<script type="module" src="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.0/src/runtime.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.1/src/styles.css">
+<script type="module" src="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.1/src/runtime.js"></script>
 
 <ve-cart-button></ve-cart-button>
 <ve-product-grid category="bouquets"></ve-product-grid>

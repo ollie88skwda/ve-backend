@@ -1,7 +1,7 @@
 ---
 import { renderProductGrid } from "../../src/render.js";
 import { ensureCatalog } from "../lib.js";
-interface Props { catalog: unknown; category?: string; slugs?: string[]; featured?: boolean; limit?: number; columns?: number; headingLevel?: number; cardStyle?: "arch" | "rounded" | "flat"; buyNow?: boolean; reveal?: boolean; className?: string; gridAttrs?: Record<string, string | boolean> }
+interface Props { catalog: unknown; category?: string; slugs?: string[]; featured?: boolean; limit?: number; columns?: number; headingLevel?: number; cardStyle?: "arch" | "rounded" | "flat"; buyNow?: boolean; reveal?: boolean; countUp?: boolean; className?: string; gridAttrs?: Record<string, string | boolean> }
 const { catalog: raw, slugs, ...opts } = Astro.props;
 const catalog = ensureCatalog(raw);
 const products = slugs ? slugs.map((s) => catalog.products.find((p) => p.slug === s)).filter(Boolean) : undefined;

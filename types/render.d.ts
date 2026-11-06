@@ -1,5 +1,5 @@
 import type { Catalog, Product, CartLine, CartTotals, CardStyle } from "./core";
-export interface CardOptions { headingLevel?: number; loading?: "lazy" | "eager"; actions?: boolean; buyNow?: boolean; reveal?: boolean; className?: string; cardStyle?: CardStyle }
+export interface CardOptions { headingLevel?: number; loading?: "lazy" | "eager"; actions?: boolean; buyNow?: boolean; reveal?: boolean; className?: string; cardStyle?: CardStyle; /** Adds data-count="<price>" for count-up animations. */ countUp?: boolean }
 export interface GridOptions extends CardOptions { category?: string; products?: Product[]; featured?: boolean; limit?: number; columns?: number; emptyText?: string; eager?: boolean; gridAttrs?: Record<string, string | boolean> }
 export const ICONS: Record<"arrow" | "bag" | "check" | "plus" | "external", string>;
 export function esc(value: unknown): string;

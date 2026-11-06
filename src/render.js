@@ -51,10 +51,10 @@ export function renderVisual(catalog, product, { className = "", loading = "lazy
   return `<div class="ve-visual ${className}" style="${style}">${inner}</div>`;
 }
 
-export function renderPrice(catalog, product, { size = "", unit } = {}) {
+export function renderPrice(catalog, product, { size = "", unit, countUp = false } = {}) {
   const price = unit ?? product.price;
   const save = savingsPercent(product);
-  return `<p class="ve-price ${size}"><span class="ve-price-now" data-ve-price>${money(catalog, price)}</span>${
+  return `<p class="ve-price ${size}"><span class="ve-price-now" data-ve-price${countUp ? ` data-count="${price}"` : ""}>${money(catalog, price)}</span>${
     product.compareAt ? `<s class="ve-price-was"><span class="ve-sr">Was </span>${money(catalog, product.compareAt)}</s>` : ""
   }${product.offer ? `<span class="ve-offer">${esc(product.offer)}</span>` : save ? `<span class="ve-offer">Save ${save}%</span>` : ""}</p>`;
 }
@@ -96,7 +96,7 @@ export function renderProductCard(catalog, product, opts = {}) {
 <div class="ve-card-body">
 <${h} class="ve-card-title"><a href="${esc(url)}">${esc(product.name)}</a></${h}>
 ${bundleLine}
-${renderPrice(catalog, product)}
+${renderPrice(catalog, product, { countUp: opts.countUp })}
 ${each ? `<p class="ve-card-each">${money(catalog, each)} per ${esc(singular(product.bundle.unit))}</p>` : ""}
 ${product.placeholder ? PLACEHOLDER : ""}
 ${actions}
