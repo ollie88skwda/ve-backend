@@ -113,7 +113,10 @@ Shared helpers in `ve-backend/live`: `fetchLiveCatalog(url?)` (never throws, ret
 - Uploads: JPG/PNG/WebP/AVIF by file contents, 4 MB, random file names, served with `nosniff` and a sandboxing CSP.
 - Admin responses are `no-store` with CSP `frame-ancestors 'none'`, `nosniff`, `X-Robots-Tag: noindex`.
 - The public catalog goes through `publicCatalog()`: hidden products, private contact fields and editor metadata are removed.
-- Writes are last-writer-wins (no locking across function instances). Fine for a small team; two admins saving at once can overwrite each other, and Undo (30 versions) recovers.
+- Saves use a version check: the editor sends the version it loaded (`?version=`); if someone else saved since, the server answers 409 `VE_HOSTED_STALE` ("Someone else saved changes. Reload to see them before saving.") and the editor offers **Reload latest**. A client that sends no version (old editor) still overwrites. The check is per function instance (not an atomic lock), so two saves in the same instant can still race; Undo (30 versions) recovers.
+- The public catalog is sent with `Cache-Control: public, max-age=0, s-maxage=5, stale-while-revalidate=30` (override with `publicCache`), so a save shows on the site within seconds.
+- Login lockout: 5 failed tries per account+network address and 20 per address for 15 minutes, so a stranger can't lock out a real user. Each limit is one fixed storage key with its expiry inside. The dummy hash for unknown users uses the highest iteration count among configured users so timing doesn't reveal usernames.
+- `ve-backend/hosted` loads `node:fs` lazily; `uiFile()` needs Node (use it in a build step).
 
 The hosted editor has **no team passcode**; use named users.
 

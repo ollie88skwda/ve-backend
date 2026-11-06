@@ -155,6 +155,7 @@ button{cursor:pointer}
 .savebar{position:fixed;left:0;right:0;bottom:0;z-index:30;background:rgb(255 255 255/.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line)}
 .savebar-in{max-width:1080px;margin:0 auto;padding:.75rem 1.25rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
 .savebar .spacer{margin-left:auto}
+#stale{background:#fff4e5;color:#7a3e00;border-bottom:1px solid #f0c78a;justify-content:space-between}
 .savebar .btn.primary{min-width:200px;min-height:52px;font-size:1.05rem}
 
 /* toasts */

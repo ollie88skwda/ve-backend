@@ -62,7 +62,7 @@ Per-product `checkout` and `posUrl` override these (e.g. bundles go to POS, ever
 
 ## `content[]` (up to 40 blocks)
 
-Editable page copy (hero slogan, banners, button labels). Full format and rules in `docs/content.md`.
+Editable page copy (hero slogan, banners, button labels). Full format and rules in `docs/content.md`. Field types: `text`, `textarea`, `link`, `image`, `gallery` (list of `{ src, alt }`, `max` default 12, hard cap 24), `toggle`.
 
 ## `categories[]` (up to 20)
 

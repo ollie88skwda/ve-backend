@@ -75,14 +75,76 @@ test("CSRF: writes need same-origin Origin plus the X-Requested-With header", as
   for (const r of [noOrigin, evil, noHeader, crossSite]) assert.equal(r.status, 403);
 });
 
-test("rate limit: 5 failures lock the account, even with the right password", async () => {
+test("rate limit: 5 failures lock that account for that address only, so strangers can't lock others out", async () => {
   const saved = cookie;
   cookie = "";
-  for (let i = 0; i < 5; i++) assert.equal((await login("bob", "wrong password!!", { ip: `8.8.8.${i}` })).status, 401);
-  const locked = await login("bob", "another long password", { ip: "8.8.8.99" });
+  for (let i = 0; i < 5; i++) assert.equal((await login("bob", "wrong password!!", { ip: "8.8.8.8" })).status, 401);
+  const locked = await login("bob", "another long password", { ip: "8.8.8.8" });
   assert.equal(locked.status, 429);
   assert.ok(Number(locked.headers.get("retry-after")) > 0);
+  // the real bob from another address is not locked out
+  assert.equal((await login("bob", "another long password", { ip: "8.8.4.4" })).status, 200);
   cookie = saved;
+});
+
+test("rate-limit storage stays bounded: many made-up usernames from one address share two keys", async () => {
+  const st = memoryStorage();
+  const ed = createHostedEditor({ storage: st, seed, env: () => env });
+  for (let i = 0; i < 30; i++) await ed.admin(req("POST", "/api/admin/login", { body: { username: `ghost${i}`, password: "wrong password!!" }, ip: "6.6.6.6" }));
+  assert.ok([...st.json.keys()].filter((k) => k.startsWith("rl-")).length <= 2);
+});
+
+test("dummy hash cost matches the configured users' iteration count", async () => {
+  const { dummyIterations } = await import("../hosted/auth.js");
+  assert.equal(dummyIterations({ a: "pbkdf2-sha256$100000$x$y", b: "pbkdf2-sha256$150000$x$y", c: "garbage" }), 150000);
+  assert.equal(dummyIterations({}), 210000);
+  const slow = await hashPassword("pw-for-timing-test", 100000);
+  const t = async (stored, iters) => { const a = performance.now(); await verifyPassword("nope-nope-nope", stored, iters); return performance.now() - a; };
+  await t(slow); // warm up
+  const real = await t(slow);
+  const dummy = await t(undefined, 100000);
+  const wrongCost = await t(undefined, 210000);
+  assert.ok(Math.abs(real - dummy) < Math.abs(real - wrongCost), `dummy ${dummy.toFixed(1)}ms should be closer to real ${real.toFixed(1)}ms than 210000-iteration dummy ${wrongCost.toFixed(1)}ms`);
+});
+
+test("PUT with a stale version answers 409 and keeps the other save; undo stays correct", async () => {
+  const ed = createHostedEditor({ storage: memoryStorage(), seed, env: () => env });
+  const admin = (...a) => ed.admin(req(...a));
+  const first = await (await admin("GET", "/api/admin/catalog")).json();
+  const a = structuredClone(first.catalog);
+  a.products[0].price = 41;
+  const savedA = await admin("PUT", `/api/admin/catalog?version=${first.version}`, { body: a });
+  assert.equal(savedA.status, 200);
+  const b = structuredClone(first.catalog);
+  b.products[0].price = 42;
+  const stale = await admin("PUT", `/api/admin/catalog?version=${first.version}`, { body: b });
+  assert.equal(stale.status, 409);
+  const sb = await stale.json();
+  assert.equal(sb.code, "VE_HOSTED_STALE");
+  assert.match(sb.error, /Someone else saved changes\. Reload to see them before saving\./);
+  const now = await (await admin("GET", "/api/admin/catalog")).json();
+  assert.equal(now.catalog.products[0].price, 41);
+  // retry with the fresh version works; no version (old client) still saves
+  assert.equal((await admin("PUT", `/api/admin/catalog?version=${now.version}`, { body: b })).status, 200);
+  const undone = await (await admin("POST", "/api/admin/undo")).json();
+  assert.equal(undone.catalog.products[0].price, 41);
+  const afterUndo = await (await admin("GET", "/api/admin/catalog")).json();
+  // a tab that loaded before the undo is now stale too
+  assert.equal((await admin("PUT", `/api/admin/catalog?version=${now.version}`, { body: b })).status, 409);
+  assert.equal((await admin("PUT", `/api/admin/catalog?version=${afterUndo.version}`, { body: first.catalog })).status, 200);
+  assert.equal((await admin("PUT", "/api/admin/catalog", { body: a })).status, 200);
+  assert.equal((await admin("PUT", "/api/admin/catalog", { body: first.catalog })).status, 200);
+});
+
+test("media route: malformed percent-encoding is a 400, not a 500", async () => {
+  const r = await editor.media(new Request(`${ORIGIN}/api/media/%E0%A4%A`));
+  assert.equal(r.status, 400);
+});
+
+test("public catalog cache header is short so saves show within seconds", async () => {
+  const r = await editor.publicCatalog(new Request(`${ORIGIN}/api/catalog`));
+  assert.match(r.headers.get("cache-control"), /s-maxage=5/);
+  assert.match(r.headers.get("cache-control"), /stale-while-revalidate=30/);
 });
 
 test("per-address limit blocks password spraying across usernames", async () => {

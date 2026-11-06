@@ -6,7 +6,7 @@ import { renderProductCard, renderProductPage, renderProductGrid } from "/ve/ren
 
 const $app = document.getElementById("app");
 const $toasts = document.getElementById("toasts");
-const state = { phase: "loading", catalog: null, saved: "", undoCount: 0, siteUrl: "", uploadBase: "/uploads/", maxUpload: 8 * 1024 * 1024, tab: "products", editing: -1, errors: {}, saving: false, previewMode: "card", previewWidth: "desktop" };
+const state = { version: undefined, stale: false, phase: "loading", catalog: null, saved: "", undoCount: 0, siteUrl: "", uploadBase: "/uploads/", maxUpload: 8 * 1024 * 1024, tab: "products", editing: -1, errors: {}, saving: false, previewMode: "card", previewWidth: "desktop" };
 
 const ICON = {
   grip: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>',
@@ -101,6 +101,8 @@ function load(p) {
   state.catalog = p.catalog;
   state.saved = JSON.stringify(p.catalog);
   state.undoCount = p.undoCount;
+  state.version = p.version;
+  state.stale = false;
   state.siteUrl = p.siteUrl || "";
   state.uploadBase = p.uploadBase || "/uploads/";
   state.maxUpload = p.maxUpload || 8 * 1024 * 1024;
@@ -125,11 +127,14 @@ async function save() {
   state.saving = true;
   render();
   try {
-    load(await api("PUT", "/api/catalog", state.catalog));
+    load(await api("PUT", `/api/catalog${state.version === undefined ? "" : `?version=${encodeURIComponent(state.version)}`}`, state.catalog));
     state.errors = {};
     toast("Saved. The site updates in a few seconds.", "ok");
   } catch (e) {
-    if (e.data?.errors) {
+    if (e.data?.stale) {
+      state.stale = true;
+      toast(e.message, "bad");
+    } else if (e.data?.errors) {
       state.errors = e.data.errors;
       const first = Object.keys(e.data.errors)[0] || "";
       const pm = /^products\.(\d+)\./.exec(first);
@@ -145,6 +150,18 @@ async function save() {
     } else toast(e.message || "Couldn't save. Please try again.", "bad");
   }
   state.saving = false;
+  render();
+}
+async function reloadLatest() {
+  if (dirty() && !(await confirmDialog({ title: "Reload the latest version?", body: "Your unsaved changes will be replaced with what was saved. Copy anything you want to keep first.", yes: "Reload", danger: true }))) return;
+  try {
+    load(await api("GET", "/api/catalog"));
+    state.errors = {};
+    state.editing = -1;
+    toast("Reloaded the latest saved version.", "ok");
+  } catch (e) {
+    toast(e.message, "bad");
+  }
   render();
 }
 async function undo() {
@@ -275,7 +292,9 @@ function shell() {
 }
 function savebar() {
   const d = dirty();
-  return h("div", { class: "savebar" }, h("div", { class: "savebar-in" },
+  return h("div", { class: "savebar" }, state.stale ? h("div", { class: "savebar-in", role: "alert", id: "stale" },
+    h("span", {}, "Someone else saved changes. Reload to see them before saving."),
+    h("button", { class: "btn primary", type: "button", id: "reload", onclick: reloadLatest }, "Reload latest")) : null, h("div", { class: "savebar-in" },
     h("span", { class: `dirty ${d ? "on" : ""}`, id: "dirty" }, h("i", {}), d ? "You have unsaved changes" : "All changes saved"),
     h("button", { class: "btn quiet", type: "button", id: "discard", disabled: !d, onclick: discard }, "Discard"),
     h("button", { class: "btn spacer", type: "button", disabled: state.undoCount === 0 || state.saving, onclick: undo, id: "undo", title: `${state.undoCount} earlier version${state.undoCount === 1 ? "" : "s"} saved` }, h("span", { html: ICON.undo }), `Undo last save${state.undoCount ? ` (${state.undoCount})` : ""}`),
@@ -580,6 +599,52 @@ function drawer() {
   return holder;
 }
 
+// ---------- gallery field: many photos with captions, uploads (local and hosted API), reorder, remove ----------
+function galleryField(f, key, errKey, help) {
+  f.value = Array.isArray(f.value) ? f.value : [];
+  const max = f.max || 12;
+  const msg = h("p", { class: "error", role: "alert" }, Object.entries(state.errors).filter(([k]) => k === errKey || k.startsWith(`${errKey}.`)).map(([, v]) => v)[0] || "");
+  async function upload(files) {
+    const list = [...(files || [])];
+    if (!list.length) return;
+    const room = max - f.value.length;
+    if (room <= 0) { msg.textContent = `This gallery is full (${max} photos). Remove one first.`; return; }
+    const problems = [];
+    let added = 0;
+    for (const file of list.slice(0, room)) {
+      if (file.size > state.maxUpload) { problems.push(`${file.name} is over ${Math.round(state.maxUpload / 1048576)} MB.`); continue; }
+      if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type)) { problems.push(`${file.name} isn't a JPG, PNG, WebP or AVIF photo.`); continue; }
+      msg.textContent = `Uploading ${added + 1} of ${Math.min(list.length, room)}…`;
+      try {
+        const r = await api("POST", `/api/upload?slug=${encodeURIComponent(slugify(f.id || "gallery"))}`, file, true);
+        f.value.push({ src: r.path, alt: "" });
+        added++;
+      } catch (ex) { problems.push(`${file.name}: ${ex.message}`); }
+    }
+    if (list.length > room) problems.push(`Only ${room} more photo${room === 1 ? "" : "s"} fit; the rest were skipped.`);
+    render();
+    const m = document.getElementById(`${key}-msg`);
+    if (m && problems.length) m.textContent = problems.join(" ");
+  }
+  const drop = h("label", { class: "drop", ondragover: (e) => { e.preventDefault(); drop.classList.add("over"); }, ondragleave: () => drop.classList.remove("over"), ondrop: (e) => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files); } },
+    h("input", { type: "file", multiple: true, accept: "image/jpeg,image/png,image/webp,image/avif", "aria-label": `Upload photos to ${f.label}`, onchange: (e) => upload(e.target.files) }),
+    h("strong", {}, "Drop photos here, or tap to choose (you can pick several)"), h("span", { class: "help" }, `JPG, PNG, WebP or AVIF, up to ${Math.round(state.maxUpload / 1048576)} MB each. ${f.value.length} of ${max} used.`));
+  msg.id = `${key}-msg`;
+  return h("div", { class: "field" }, h("span", { class: "lbl" }, f.label), help ? h("p", { class: "help" }, help) : null,
+    h("ul", { class: "photos" }, f.value.map((im, j) => h("li", { class: "photo" },
+      h("div", { class: "pimg" }, im.src ? h("img", { src: im.src, alt: "" }) : null),
+      h("div", { class: "photo-fields" },
+        textField({ label: `Photo ${j + 1} caption`, key: `${key}-${j}-alt`, errKey: `${errKey}.${j}.alt`, max: 160, get: () => im.alt, set: (v) => { im.alt = v; } }),
+        textField({ label: "Image address", key: `${key}-${j}-src`, errKey: `${errKey}.${j}.src`, max: 500, get: () => im.src, set: (v) => { im.src = v; }, attrs: { autocomplete: "off", spellcheck: "false" } }),
+        h("div", { class: "btns" },
+          h("button", { class: "btn icon", type: "button", disabled: j === 0, "aria-label": `Move photo ${j + 1} earlier`, html: ICON.up, onclick: () => { moveItem(f.value, j, j - 1); render(); } }),
+          h("button", { class: "btn icon", type: "button", disabled: j === f.value.length - 1, "aria-label": `Move photo ${j + 1} later`, html: ICON.down, onclick: () => { moveItem(f.value, j, j + 1); render(); } }),
+          h("button", { class: "btn danger", type: "button", onclick: () => { f.value.splice(j, 1); render(); } }, "Remove photo")))))),
+    drop,
+    h("button", { class: "btn quiet", type: "button", disabled: f.value.length >= max, onclick: () => { f.value.push({ src: "/assets/img/", alt: "" }); render(); } }, "Use an image already on the site"),
+    msg);
+}
+
 // ---------- site content (blocks declared in catalog.content by the site's developer) ----------
 function contentTab() {
   const blocks = (C().content = C().content || []);
@@ -593,6 +658,7 @@ function contentTab() {
         textField({ label: f.label, help: help || "A site image like /assets/img/photo.webp, or an https:// link.", key, errKey, max: 500, get: () => f.value, set: (v) => { f.value = v; }, attrs: { autocomplete: "off", spellcheck: "false" } }),
         textField({ label: `${f.label} description`, help: "Describes the image for screen readers.", key: `${key}-alt`, errKey: `content.${bi}.fields.${fi}.alt`, max: 160, get: () => f.alt, set: (v) => { f.alt = v; } }));
     }
+    if (f.type === "gallery") return galleryField(f, key, `content.${bi}.fields.${fi}.value`, help);
     return textField({ label: f.label, help, key, errKey, max: f.max || (f.type === "textarea" ? 1000 : 140), textarea: f.type === "textarea", rows: f.type === "textarea" ? 3 : undefined, get: () => f.value, set: (v) => { f.value = v; }, attrs: f.type === "link" ? { autocomplete: "off", spellcheck: "false" } : {} });
   };
   return h("div", {},

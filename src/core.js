@@ -8,7 +8,9 @@ export const BUTTON_STYLES = ["pill", "rounded", "square"];
 export const IMAGE_FITS = ["contain", "cover"];
 export const MAX_QUANTITY = 10;
 /** Field types for editable site content blocks (catalog.content). */
-export const CONTENT_TYPES = ["text", "textarea", "link", "image", "toggle"];
+export const CONTENT_TYPES = ["text", "textarea", "link", "image", "gallery", "toggle"];
+export const GALLERY_DEFAULT_MAX = 12;
+export const GALLERY_HARD_MAX = 24;
 
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const COLOR = /^(#[0-9a-fA-F]{3,8}|rgb\(.+\)|rgba\(.+\)|hsl\(.+\)|oklch\(.+\)|color-mix\(.+\)|var\(--[a-zA-Z0-9-]+\)|[a-z]+)$/;
@@ -381,7 +383,7 @@ function validateContent(input, { errors, err, text, link, image }) {
       seenFields.add(fid);
       const type = CONTENT_TYPES.includes(f.type) ? f.type : f.type === undefined ? "text" : (err(`${fk}.type`, `Field type should be one of: ${CONTENT_TYPES.join(", ")}.`), "text");
       const label = text(f.label || fid, `${fk}.label`, { label: "Field name", max: 60 });
-      const max = Math.min(Math.max(Number(f.max) || (type === "textarea" ? 1000 : 140), 1), 5000);
+      const max = type === "gallery" ? Math.min(Math.max(Math.floor(Number(f.max)) || GALLERY_DEFAULT_MAX, 1), GALLERY_HARD_MAX) : Math.min(Math.max(Number(f.max) || (type === "textarea" ? 1000 : 140), 1), 5000);
       const field = { id: fid, label, type, help: text(f.help, `${fk}.help`, { label: "Field help", max: 240 }), required: f.required === true };
       if (type === "text" || type === "textarea") {
         field.max = max;
@@ -398,6 +400,22 @@ function validateContent(input, { errors, err, text, link, image }) {
         field.value = image(f.value, `${fk}.value`, label);
         field.alt = text(f.alt, `${fk}.alt`, { label: `${label} description`, max: 160 });
         if (field.required && !field.value) err(`${fk}.value`, `${label} can't be empty.`);
+      } else if (type === "gallery") {
+        field.max = max;
+        field.value = [];
+        const list = f.value === undefined || f.value === null ? [] : f.value;
+        if (!Array.isArray(list)) err(`${fk}.value`, `${label} should be a list of photos.`);
+        else {
+          if (list.length > max) err(`${fk}.value`, `${label} can have up to ${max} photos.`);
+          list.slice(0, GALLERY_HARD_MAX).forEach((it, n) => {
+            it = it && typeof it === "object" ? it : {};
+            const src = image(it.src, `${fk}.value.${n}.src`, `Photo ${n + 1}`);
+            const alt = text(it.alt, `${fk}.value.${n}.alt`, { label: `Photo ${n + 1} caption`, max: 160 });
+            if (src) field.value.push({ src, alt });
+            else if (!errors[`${fk}.value.${n}.src`]) err(`${fk}.value.${n}.src`, `Photo ${n + 1} needs an image.`);
+          });
+        }
+        if (field.required && !field.value.length && !errors[`${fk}.value`]) err(`${fk}.value`, `${label} needs at least one photo.`);
       } else {
         field.value = f.value === true;
       }
@@ -409,7 +427,8 @@ function validateContent(input, { errors, err, text, link, image }) {
 }
 
 /**
- * Read one content block as { fieldId: value }. Image fields also give `<id>Alt`.
+ * Read one content block as { fieldId: value }. Image fields also give `<id>Alt`; gallery fields give an array of { src, alt }
+ * (an empty gallery keeps your fallback).
  * Pass fallbacks so the page still renders if the block is missing:
  *   const hero = getContent(catalog, "hero", { title: "Always in bloom" });
  */
@@ -417,6 +436,10 @@ export function getContent(catalog, blockId, fallback = {}) {
   const block = (catalog?.content || []).find((b) => b.id === blockId);
   const out = { ...fallback };
   for (const f of block?.fields || []) {
+    if (f.type === "gallery") {
+      if (Array.isArray(f.value) && f.value.length) out[f.id] = f.value.map((x) => ({ ...x }));
+      continue;
+    }
     if (f.type === "toggle" || f.value !== "") out[f.id] = f.value;
     if (f.type === "image" && f.alt) out[`${f.id}Alt`] = f.alt;
   }

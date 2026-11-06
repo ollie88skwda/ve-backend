@@ -37,7 +37,7 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 
 | Task | Do this |
 |---|---|
-| Add store to an Astro site | `npm install github:ollie88skwda/ve-backend#semver:^0.3.0` → `npx ve-backend init --astro` → edit catalog → `npx ve-backend validate` |
+| Add store to an Astro site | `npm install github:ollie88skwda/ve-backend#semver:^0.4.0` → `npx ve-backend init --astro` → edit catalog → `npx ve-backend validate` |
 | Add/edit a product | Edit `src/data/ve.catalog.json` (or `npm run editor`), then `npx ve-backend validate` |
 | Make cards match the brand | Set `theme` in the catalog (colors, fonts, `card`, `button`, `tints`), then fine-tune in site CSS. See `docs/customizing.md` |
 | "Make the hero/banner/text editable in ve-backend" | Add a block to `content` in the catalog, read it with `getContent()` in the component. See `docs/content.md` |

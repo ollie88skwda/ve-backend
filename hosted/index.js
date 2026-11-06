@@ -3,7 +3,7 @@
 // Security matches the local editor and Hangr's hosted editor: PBKDF2 users, HMAC sessions, CSRF, rate limit, upload sniffing.
 // See docs/hosted.md.
 import { publicCatalog, slugify, validateCatalog } from "../src/core.js";
-import { clearCookie, clearFailures, clientIp, createSessionCookie, getSession, normalizeUser, parseUsers, rateLimited, recordFailure, revokeSession, sameOriginWrite, verifyPassword } from "./auth.js";
+import { clearCookie, dummyIterations, clearFailures, clientIp, createSessionCookie, getSession, normalizeUser, parseUsers, rateLimited, recordFailure, revokeSession, sameOriginWrite, verifyPassword } from "./auth.js";
 
 export { fileStorage, memoryStorage, vercelBlobStorage } from "./storage.js";
 export { hashPassword, verifyPassword } from "./auth.js";
@@ -52,7 +52,7 @@ function fail(code, message) {
  *   secretEnv      env var holding the session secret, 32+ chars (default VE_SESSION_SECRET)
  *   cookie         session cookie name (default "__Host-ve_editor")
  *   maxUpload      bytes (default 4 MB)
- *   publicCache    Cache-Control for the public catalog (default "public, max-age=0, must-revalidate")
+ *   publicCache    Cache-Control for the public catalog (default "public, max-age=0, s-maxage=5, stale-while-revalidate=30": the CDN reuses it for 5 s, browsers always revalidate)
  *   cors           Access-Control-Allow-Origin for the PUBLIC catalog (default "*"; "" disables)
  * Returns { admin, publicCatalog, media }, each (Request) => Promise<Response>.
  */
@@ -66,7 +66,7 @@ export function createHostedEditor(options = {}) {
   const usersEnv = options.usersEnv || "VE_ADMIN_USERS";
   const secretEnv = options.secretEnv || "VE_SESSION_SECRET";
   const cookie = options.cookie || "__Host-ve_editor";
-  const publicCache = options.publicCache || "public, max-age=0, must-revalidate";
+  const publicCache = options.publicCache || "public, max-age=0, s-maxage=5, stale-while-revalidate=30";
   const cors = options.cors === undefined ? "*" : options.cors;
   const getEnv = () => (typeof options.env === "function" ? options.env() : options.env || globalThis.process?.env || {});
 
@@ -109,9 +109,11 @@ export function createHostedEditor(options = {}) {
     chain = next.catch(() => {});
     return next;
   };
-  const save = (value, user) =>
+  const STALE_MESSAGE = "Someone else saved changes. Reload to see them before saving.";
+  const save = (value, user, expected) =>
     serial(async () => {
       const current = await readCurrent();
+      if (expected !== undefined && expected !== String(current.version || 0)) return { conflict: true };
       if (JSON.stringify(current.catalog) === JSON.stringify(value)) return current;
       const key = `catalog-v-${String(current.version || 0).padStart(6, "0")}-${crypto.randomUUID().slice(0, 8)}`;
       const { history, ...prev } = current;
@@ -169,14 +171,15 @@ export function createHostedEditor(options = {}) {
         const user = normalizeUser(body?.username);
         const password = typeof body?.password === "string" ? body.password : "";
         if (!user || !password || password.length > 512) return jsonResponse(400, { error: "Please enter your username and password." });
-        const wait = await rateLimited(storage, ip, user);
+        const known = Object.prototype.hasOwnProperty.call(cfg.users, user) ? user : "";
+        const wait = await rateLimited(storage, ip, known);
         if (wait) return jsonResponse(429, { error: "Too many tries. Please wait a few minutes and try again.", code: "VE_HOSTED_RATE_LIMITED", retryAfter: wait }, { "Retry-After": String(wait) });
-        const stored = Object.prototype.hasOwnProperty.call(cfg.users, user) ? cfg.users[user] : undefined;
-        if (await verifyPassword(password, stored)) {
-          await clearFailures(storage, ip, user);
+        const stored = known ? cfg.users[user] : undefined;
+        if (await verifyPassword(password, stored, dummyIterations(cfg.users))) {
+          await clearFailures(storage, ip, known);
           return jsonResponse(200, { ok: true, user }, { "Set-Cookie": await createSessionCookie(cfg, user, stored) });
         }
-        await recordFailure(storage, ip, user);
+        await recordFailure(storage, ip, known);
         return jsonResponse(401, { error: "That username and password didn't match. Please try again.", code: "VE_HOSTED_BAD_LOGIN" });
       }
 
@@ -198,7 +201,11 @@ export function createHostedEditor(options = {}) {
         }
         const result = validateCatalog(body);
         if (result.errors) return jsonResponse(422, { error: "Some details need a quick fix. Look for the red notes.", errors: result.errors, code: "VE_CATALOG_INVALID" });
-        return jsonResponse(200, payload(await save(result.value, session.user)));
+        // Optimistic concurrency: the editor sends the version it loaded as ?version= (or If-Match). Absent = old client, no check.
+        const sent = url.searchParams.get("version") ?? request.headers.get("if-match");
+        const saved = await save(result.value, session.user, sent === null ? undefined : String(sent).replace(/^"|"$/g, ""));
+        if (saved.conflict) return jsonResponse(409, { error: STALE_MESSAGE, code: "VE_HOSTED_STALE", stale: true });
+        return jsonResponse(200, payload(saved));
       }
       if (route === "/validate" && method === "POST") {
         let body;
@@ -251,7 +258,12 @@ export function createHostedEditor(options = {}) {
     }
   }
   async function media(request) {
-    const name = decodeURIComponent(new URL(request.url).pathname.split("/").pop() || "");
+    let name;
+    try {
+      name = decodeURIComponent(new URL(request.url).pathname.split("/").pop() || "");
+    } catch {
+      return new Response("Bad request", { status: 400 });
+    }
     const m = /^[a-z0-9][a-z0-9-]{0,60}\.(jpg|png|webp|avif)$/.exec(name);
     if (!m) return new Response("Not found", { status: 404 });
     try {

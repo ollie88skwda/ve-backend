@@ -42,8 +42,10 @@ export interface Theme {
   tints: Record<string, string>;
   motion: boolean;
 }
-export type ContentFieldType = "text" | "textarea" | "link" | "image" | "toggle";
-export interface ContentField { id: string; label: string; type: ContentFieldType; help?: string; required?: boolean; max?: number; value: string | boolean; alt?: string }
+export type ContentFieldType = "text" | "textarea" | "link" | "image" | "gallery" | "toggle";
+export interface ContentField { id: string; label: string; type: ContentFieldType; help?: string; required?: boolean; max?: number; value: string | boolean | GalleryItem[]; alt?: string }
+/** One photo in a `gallery` field; `alt` doubles as the caption. */
+export interface GalleryItem { src: string; alt: string }
 /** An editable block of site content (hero, banner…) declared by the site and edited in the sales editor. */
 export interface ContentBlock { id: string; label: string; help?: string; fields: ContentField[] }
 export interface Catalog {
@@ -76,7 +78,9 @@ export function validateCatalog(input: unknown): { value: Catalog; errors?: unde
 export function loadCatalog(input: unknown): Catalog;
 export const CONTENT_TYPES: ContentFieldType[];
 /** One content block as { fieldId: value } (image fields also give `<id>Alt`), over the given fallbacks. */
-export function getContent<T extends Record<string, string | boolean> = Record<string, string>>(catalog: Catalog | unknown, blockId: string, fallback?: Partial<T>): T & Record<string, string | boolean>;
+export function getContent<T extends Record<string, string | boolean | GalleryItem[]> = Record<string, string>>(catalog: Catalog | unknown, blockId: string, fallback?: Partial<T>): T & Record<string, string | boolean | GalleryItem[]>;
+export const GALLERY_DEFAULT_MAX: 12;
+export const GALLERY_HARD_MAX: 24;
 export function visibleProducts(catalog: Catalog, category?: string): Product[];
 export function findProduct(catalog: Catalog, slug: string): Product | null;
 export function findCategory(catalog: Catalog, slug: string): Category | null;

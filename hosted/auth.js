@@ -40,13 +40,25 @@ export async function hashPassword(password, iterations = PBKDF2_ITERATIONS) {
   return `pbkdf2-sha256$${iterations}$${b64u(salt)}$${b64u(await pbkdf2(password, salt, iterations))}`;
 }
 
-const DUMMY = `pbkdf2-sha256$${PBKDF2_ITERATIONS}$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
-/** Constant-time check. Pass `undefined` for an unknown user: a dummy hash is computed so timing doesn't reveal usernames. */
-export async function verifyPassword(password, stored) {
-  const parts = String(stored || DUMMY).split("$");
+const dummyHash = (iterations) => `pbkdf2-sha256$${iterations}$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA`;
+/** Iteration count to use for the dummy check: the highest count among the configured users' hashes (default if none parse). */
+export function dummyIterations(users) {
+  let best = 0;
+  for (const stored of Object.values(users || {})) {
+    const n = Number(String(stored).split("$")[1]);
+    if (Number.isInteger(n) && n >= MIN_ITERATIONS && n <= MAX_ITERATIONS && n > best) best = n;
+  }
+  return best || PBKDF2_ITERATIONS;
+}
+/**
+ * Constant-time check. Pass `undefined` for an unknown user: a dummy hash is computed so timing doesn't reveal usernames.
+ * `iterations` sets that dummy's cost; pass dummyIterations(users) so it matches the real hashes.
+ */
+export async function verifyPassword(password, stored, iterations = PBKDF2_ITERATIONS) {
+  const parts = String(stored || dummyHash(iterations)).split("$");
   if (parts.length !== 4 || parts[0] !== "pbkdf2-sha256") return false;
-  const iterations = Number(parts[1]);
-  if (!Number.isInteger(iterations) || iterations < MIN_ITERATIONS || iterations > MAX_ITERATIONS) return false;
+  const count = Number(parts[1]);
+  if (!Number.isInteger(count) || count < MIN_ITERATIONS || count > MAX_ITERATIONS) return false;
   let salt, want;
   try {
     salt = fromB64(parts[2]);
@@ -54,7 +66,7 @@ export async function verifyPassword(password, stored) {
   } catch {
     return false;
   }
-  const got = await pbkdf2(password, salt, iterations);
+  const got = await pbkdf2(password, salt, count);
   return equalBytes(got, want) && Boolean(stored);
 }
 
@@ -118,13 +130,17 @@ export async function revokeSession(kv, session) {
   await kv.put(`session-revoked-${await sha256Hex(session.sid)}`, { until: session.exp * 1000 });
 }
 
-// Failed-login limit per username (5) and per network address (20) for 15 minutes.
-// Storage writes are last-writer-wins, so this is a strong brake, not an exact counter.
-const rlKeys = async (ip, user) => [[`rl-user-${await sha256Hex(user || "-")}`, MAX_FAILS_USER], [`rl-ip-${await sha256Hex(ip)}`, MAX_FAILS_IP]];
+// Failed-login limits for 15 minutes: 5 per (account + network address) and 20 per network address, so one stranger can't
+// lock a real account out for everyone. Each limit is ONE fixed Blob key holding { count, until }; an expired key is
+// reused or deleted, and names that aren't real accounts share a single "-" key per address, so failures can't create
+// unbounded new keys. Storage writes are last-writer-wins, so this is a strong brake, not an exact counter.
+// `user` should be a configured account name, or "" for an unknown one.
+const rlKeys = async (ip, user) => [[`rl-ua-${await sha256Hex(`${ip}\n${user || "-"}`)}`, MAX_FAILS_USER], [`rl-ip-${await sha256Hex(ip)}`, MAX_FAILS_IP]];
 export async function rateLimited(kv, ip, user) {
   for (const [key, max] of await rlKeys(ip, user)) {
     const v = await kv.get(key);
-    if (v && v.count >= max && v.until > Date.now()) return Math.ceil((v.until - Date.now()) / 1000);
+    if (v && v.until <= Date.now()) await kv.del(key);
+    else if (v && v.count >= max) return Math.ceil((v.until - Date.now()) / 1000);
   }
   return 0;
 }
@@ -138,7 +154,8 @@ export async function recordFailure(kv, ip, user) {
   }
 }
 export async function clearFailures(kv, ip, user) {
-  for (const [key] of await rlKeys(ip, user)) await kv.del(key);
+  const [first] = await rlKeys(ip, user);
+  await kv.del(first[0]);
 }
 
 /** CSRF guard for writes: Origin must be this site, plus a custom header (forces a CORS preflight cross-site). */

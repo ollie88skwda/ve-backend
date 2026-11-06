@@ -84,3 +84,23 @@ test("links accept site paths, #sections, mailto and https only", () => {
     assert.ok(validateCatalog(withContent([b])).errors?.["content.0.fields.2.value"], bad);
   }
 });
+
+import { validateCatalog as vc, getContent as gc, DEFAULT_CATALOG as DC } from "../src/core.js";
+const galleryCatalog = (value, extra = {}) => ({ ...structuredClone(DC), content: [{ id: "about", label: "About", fields: [{ id: "photos", label: "Photos", type: "gallery", value, ...extra }] }] });
+
+test("gallery field validates src, caption length, max and hard cap; getContent returns the array", () => {
+  const ok = vc(galleryCatalog([{ src: "/a.webp", alt: "One" }, { src: "https://x.example/b.jpg", alt: "" }]));
+  assert.ok(!ok.errors, JSON.stringify(ok.errors));
+  assert.deepEqual(gc(ok.value, "about").photos, [{ src: "/a.webp", alt: "One" }, { src: "https://x.example/b.jpg", alt: "" }]);
+  assert.deepEqual(gc(vc(galleryCatalog([])).value, "about", { photos: [{ src: "/fallback.webp", alt: "f" }] }).photos, [{ src: "/fallback.webp", alt: "f" }]);
+  assert.ok(vc(galleryCatalog([{ src: "javascript:alert(1)", alt: "" }])).errors["content.0.fields.0.value.0.src"]);
+  assert.ok(vc(galleryCatalog([{ src: "/a.webp", alt: "x".repeat(161) }])).errors["content.0.fields.0.value.0.alt"]);
+  assert.ok(vc(galleryCatalog([{ src: "", alt: "no image" }])).errors["content.0.fields.0.value.0.src"]);
+  const many = (n) => Array.from({ length: n }, (_, i) => ({ src: `/p${i}.webp`, alt: "" }));
+  assert.ok(!vc(galleryCatalog(many(12))).errors);
+  assert.ok(vc(galleryCatalog(many(13))).errors["content.0.fields.0.value"]);
+  assert.ok(!vc(galleryCatalog(many(20), { max: 20 })).errors);
+  assert.ok(vc(galleryCatalog(many(25), { max: 99 })).errors["content.0.fields.0.value"]);
+  assert.equal(vc(galleryCatalog([], { max: 99 })).value.content[0].fields[0].max, 24);
+  assert.ok(vc(galleryCatalog("nope")).errors["content.0.fields.0.value"]);
+});

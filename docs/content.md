@@ -46,10 +46,10 @@ Admins can't add or remove fields, so the page layout stays exactly as coded.
 | block `label`, `help` | what admins see (≤60, ≤240). Plain language: say where on the site it shows |
 | field `id` | unique within the block, same characters as block id. Becomes the property name in code |
 | field `label`, `help` | what admins see. Put examples and length guidance in `help` |
-| `type` | `text` (one line), `textarea` (multi-line), `link`, `image`, `toggle`. Default `text` |
-| `max` | character limit for `text`/`textarea` (default 140 / 1000, up to 5000). **Set it from the design**: the longest text that still fits the layout at 390px wide |
+| `type` | `text` (one line), `textarea` (multi-line), `link`, `image`, `gallery`, `toggle`. Default `text` |
+| `max` | character limit for `text`/`textarea` (default 140 / 1000, up to 5000). For `gallery`: the most photos allowed (default 12, hard cap 24). **Set it from the design**: the longest text that still fits the layout at 390px wide |
 | `required` | empty value is rejected on save |
-| `value` | the current content. `toggle` is `true`/`false` |
+| `value` | the current content. `toggle` is `true`/`false`; `gallery` is a list of `{ "src", "alt" }` (`alt` is the caption) |
 | `alt` | `image` only: description for screen readers, editable by admins |
 
 Validation (same in build, editor and `validate`):
@@ -57,6 +57,7 @@ Validation (same in build, editor and `validate`):
 - `text` can't contain line breaks.
 - `link` must be a site path (`/shop/`), an in-page section (`#bundles`), a `mailto:` address or an `https://` URL. `javascript:`, `data:` and `http:` are rejected.
 - `image` must be a site path or an `https://` URL.
+- `gallery` is a list of `{ src, alt }`: `src` a site path or `https://` URL (≤500), `alt` ≤160, at most `max` items (default 12, never more than 24). In the editor admins upload several photos at once (local and hosted), edit captions, reorder and remove. `getContent` returns the array (`getContent(catalog, "about").companyPhotos`); an empty gallery keeps your fallback. Example field: `{ "id": "companyPhotos", "label": "Behind the scenes photos", "type": "gallery", "max": 12, "value": [{ "src": "/assets/team.webp", "alt": "The team at the trade show" }] }`.
 - Errors are keyed like `content.0.fields.2.value` and shown next to the field in the editor.
 
 Limits: 40 blocks, 40 fields per block.

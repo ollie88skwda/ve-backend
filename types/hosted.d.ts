@@ -27,7 +27,7 @@ export interface HostedEditorOptions {
 export type Handler = (request: Request) => Promise<Response>;
 export function createHostedEditor(options: HostedEditorOptions): { admin: Handler; publicCatalog: Handler; media: Handler; storage: StorageAdapter };
 export function hashPassword(password: string, iterations?: number): Promise<string>;
-export function verifyPassword(password: string, stored: string | undefined): Promise<boolean>;
+export function verifyPassword(password: string, stored: string | undefined, dummyIterations?: number): Promise<boolean>;
 export function sniffImage(bytes: Uint8Array): "jpg" | "png" | "webp" | "avif" | null;
 export function uiFile(name: string, options?: { base?: string; apiBase?: string }): { body: string; type: string } | null;
 export const UI_FILES: string[];
