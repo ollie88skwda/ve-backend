@@ -6,6 +6,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
+import os from "node:os";
 import { fileURLToPath } from "node:url";
 import { slugify, validateCatalog } from "../src/core.js";
 
@@ -35,6 +36,59 @@ export function readPasscode(root, env = process.env) {
   return "";
 }
 
+/**
+ * Personal admin accounts shared by every ve-backend editor for this OS user.
+ * Stored as scrypt hashes in ~/.config/ve-backend/admins.json (override with VE_ADMINS_FILE). Never logged.
+ */
+export const ADMINS_ENV = "VE_ADMINS_FILE";
+export const adminsFile = (env = process.env) => env[ADMINS_ENV] || path.join(os.homedir(), ".config", "ve-backend", "admins.json");
+
+export function readAdmins(env = process.env) {
+  try {
+    const data = JSON.parse(fs.readFileSync(adminsFile(env), "utf8"));
+    return data && typeof data.admins === "object" ? data.admins : {};
+  } catch {
+    return {};
+  }
+}
+
+const SCRYPT = { N: 16384, r: 8, p: 1 };
+export function hashPassword(password) {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(String(password), salt, 32, SCRYPT);
+  return `scrypt$${salt.toString("base64url")}$${hash.toString("base64url")}`;
+}
+export function verifyPassword(password, stored) {
+  const [kind, salt, hash] = String(stored || "").split("$");
+  if (kind !== "scrypt" || !salt || !hash) return false;
+  const want = Buffer.from(hash, "base64url");
+  const got = crypto.scryptSync(String(password), Buffer.from(salt, "base64url"), want.length, SCRYPT);
+  return crypto.timingSafeEqual(got, want);
+}
+
+/** Add or replace an admin account. Username is case-insensitive. */
+export function setAdmin(username, password, env = process.env) {
+  const name = String(username || "").trim().toLowerCase();
+  if (!/^[a-z0-9._-]{2,40}$/.test(name)) throw Object.assign(new Error("VE_ADMIN_BAD_USERNAME: use 2-40 letters, numbers, dots, dashes or underscores."), { code: "VE_ADMIN_BAD_USERNAME" });
+  if (String(password || "").length < 10) throw Object.assign(new Error("VE_ADMIN_WEAK_PASSWORD: use at least 10 characters."), { code: "VE_ADMIN_WEAK_PASSWORD" });
+  const file = adminsFile(env);
+  const admins = readAdmins(env);
+  admins[name] = { hash: hashPassword(password), updated: new Date().toISOString() };
+  fs.mkdirSync(path.dirname(file), { recursive: true, mode: 0o700 });
+  fs.writeFileSync(file, `${JSON.stringify({ admins }, null, 2)}\n`, { mode: 0o600 });
+  fs.chmodSync(file, 0o600);
+  return { username: name, file };
+}
+
+export function removeAdmin(username, env = process.env) {
+  const name = String(username || "").trim().toLowerCase();
+  const admins = readAdmins(env);
+  if (!admins[name]) return false;
+  delete admins[name];
+  fs.writeFileSync(adminsFile(env), `${JSON.stringify({ admins }, null, 2)}\n`, { mode: 0o600 });
+  return true;
+}
+
 const MIME = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
   ".json": "application/json; charset=utf-8", ".woff2": "font/woff2", ".woff": "font/woff", ".otf": "font/otf", ".ttf": "font/ttf",
@@ -60,7 +114,8 @@ export function createEditorServer(options) {
   const HISTORY = path.resolve(root, ".ve-backend", "history");
   const SITE_URL = options.siteUrl || "";
   const PASSCODE = options.passcode;
-  if (!PASSCODE) {
+  const ENV = options.env || process.env;
+  if (!PASSCODE && !Object.keys(readAdmins(ENV)).length) {
     const e = new Error(`VE_EDITOR_NO_PASSCODE: set ${PASSCODE_ENV} in the environment or in ${path.join(root, PASSCODE_FILE)} (keep that file out of git).`);
     e.code = "VE_EDITOR_NO_PASSCODE";
     throw e;
@@ -71,7 +126,13 @@ export function createEditorServer(options) {
     throw e;
   }
   const sha = (v) => crypto.createHash("sha256").update(String(v)).digest();
-  const passcodeOk = (attempt) => crypto.timingSafeEqual(sha(attempt), sha(PASSCODE));
+  const passcodeOk = (attempt) => Boolean(PASSCODE) && crypto.timingSafeEqual(sha(attempt), sha(PASSCODE));
+  // Admin accounts are re-read on each sign-in so `ve-backend admin set` takes effect without a restart.
+  const adminOk = (username, password) => {
+    const record = readAdmins(ENV)[String(username).trim().toLowerCase()];
+    // Hash a dummy when the user is unknown so timing doesn't reveal which usernames exist.
+    return verifyPassword(password, record?.hash || "scrypt$AAAAAAAAAAAAAAAAAAAAAA$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA") && Boolean(record);
+  };
 
   const sessions = new Map();
   const failures = new Map();
@@ -197,9 +258,12 @@ export function createEditorServer(options) {
       try {
         body = JSON.parse((await readBody(req, 4096)).toString("utf8"));
       } catch {
-        return sendJson(res, 400, { error: "Please enter the passcode." });
+        return sendJson(res, 400, { error: "Please enter your password or the team passcode." });
       }
-      if (typeof body.passcode === "string" && passcodeOk(body.passcode)) {
+      const username = typeof body.username === "string" ? body.username.trim() : "";
+      const secret = typeof body.password === "string" ? body.password : typeof body.passcode === "string" ? body.passcode : "";
+      const ok = secret && (username ? adminOk(username, secret) : passcodeOk(secret));
+      if (ok) {
         failures.delete(ip);
         return sendJson(res, 200, { ok: true }, { "Set-Cookie": `ve_editor=${newSession()}; HttpOnly; SameSite=Strict; Path=/; Max-Age=${SESSION_MS / 1000}` });
       }
@@ -210,7 +274,7 @@ export function createEditorServer(options) {
       }
       failures.set(ip, f);
       await new Promise((r) => setTimeout(r, 400));
-      return sendJson(res, 401, { error: "That passcode didn't work. Please try again." });
+      return sendJson(res, 401, { error: username ? "That username and password didn't match. Please try again." : "That passcode didn't work. Please try again." });
     }
     if (url.pathname === "/api/session" && req.method === "GET") return sendJson(res, 200, { signedIn: authed(req) });
     if (url.pathname === "/api/logout" && req.method === "POST") {

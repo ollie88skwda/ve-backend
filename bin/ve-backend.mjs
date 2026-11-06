@@ -5,7 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCatalog } from "../src/core.js";
-import { createEditorServer, readPasscode, PASSCODE_ENV, PASSCODE_FILE } from "../editor/server.mjs";
+import { createEditorServer, readPasscode, readAdmins, setAdmin, removeAdmin, adminsFile, PASSCODE_ENV, PASSCODE_FILE } from "../editor/server.mjs";
 
 const LIB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const HELP = `ve-backend: storefront + sales editor for Virtual Enterprise companies
@@ -15,6 +15,9 @@ Usage:
   ve-backend editor [--port 4410] [--host 127.0.0.1] [--catalog <file>] [--public <dir>] [--site-url <url>]
                                                Start the passcode-protected sales editor
   ve-backend validate [--catalog <file>]       Check the catalog and list problems
+  ve-backend admin set <username>              Create/replace a personal admin login (password from
+                                               VE_ADMIN_PASSWORD or stdin) that works in every editor
+  ve-backend admin list | remove <username>    List or remove personal admin logins
 
 Settings can also live in package.json under "ve-backend": { "catalog", "publicDir", "siteUrl", "port" }.
 Passcode: ${PASSCODE_ENV} in the environment or in ${PASSCODE_FILE} (gitignored, never printed).`;
@@ -61,6 +64,34 @@ if (!cmd || cmd === "help" || opts.help) {
   process.exit(0);
 }
 
+if (cmd === "admin") {
+  const [, sub, name] = opts._;
+  if (sub === "list") {
+    const names = Object.keys(readAdmins());
+    console.log(names.length ? `Admins in ${adminsFile()}:\n  ${names.join("\n  ")}` : `No admins yet (${adminsFile()}).`);
+    process.exit(0);
+  }
+  if (sub === "remove") {
+    if (!name) fail("VE_ADMIN_NO_USERNAME", "missing username.", "ve-backend admin remove <username>");
+    console.log(removeAdmin(name) ? `Removed ${name}.` : `${name} was not an admin.`);
+    process.exit(0);
+  }
+  if (sub === "set") {
+    if (!name) fail("VE_ADMIN_NO_USERNAME", "missing username.", "ve-backend admin set <username>");
+    let password = process.env.VE_ADMIN_PASSWORD || "";
+    if (!password && !process.stdin.isTTY) password = fs.readFileSync(0, "utf8").replace(/\r?\n$/, "");
+    if (!password) fail("VE_ADMIN_NO_PASSWORD", "no password given.", "pipe it on stdin or set VE_ADMIN_PASSWORD (it is never printed).");
+    try {
+      const r = setAdmin(name, password);
+      console.log(`Saved admin "${r.username}" in ${r.file}. It works in every ve-backend editor run by this user.`);
+    } catch (e) {
+      fail(e.code || "VE_ADMIN_SAVE_FAILED", e.message);
+    }
+    process.exit(0);
+  }
+  fail("VE_ADMIN_BAD_COMMAND", `unknown admin command "${sub || ""}".`, "use: ve-backend admin set|list|remove");
+}
+
 if (cmd === "validate") {
   const file = findCatalog(root, opts.catalog, settings);
   if (!fs.existsSync(file)) fail("VE_CATALOG_FILE_MISSING", `${file} not found.`, "run `npx ve-backend init`.");
@@ -78,7 +109,7 @@ if (cmd === "validate") {
 
 if (cmd === "editor") {
   const passcode = readPasscode(root);
-  if (!passcode) fail("VE_EDITOR_NO_PASSCODE", `no passcode found.`, `add ${PASSCODE_ENV}=<passcode> to ${path.join(root, PASSCODE_FILE)} (or run \`npx ve-backend init\`, which creates one).`);
+  if (!passcode && !Object.keys(readAdmins()).length) fail("VE_EDITOR_NO_PASSCODE", `no passcode found.`, `add ${PASSCODE_ENV}=<passcode> to ${path.join(root, PASSCODE_FILE)} (or run \`npx ve-backend init\`, which creates one).`);
   let editor;
   try {
     editor = createEditorServer({

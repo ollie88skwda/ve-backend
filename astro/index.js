@@ -9,4 +9,4 @@ export { default as CartButton } from "./components/CartButton.astro";
 export { default as Cart } from "./components/Cart.astro";
 export { default as Checkout } from "./components/Checkout.astro";
 export { ensureCatalog } from "./lib.js";
-export { getShopPaths, findProduct, findCategory, visibleProducts, formatMoney } from "../src/core.js";
+export { getShopPaths, findProduct, findCategory, visibleProducts, formatMoney, productUrl, categoryUrl, unitPrice, perUnit, loadCatalog } from "../src/core.js";

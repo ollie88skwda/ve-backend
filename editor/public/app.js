@@ -214,7 +214,8 @@ function render() {
 function signin() {
   const msg = h("p", { class: "error", id: "pc-err", role: "alert" });
   const btn = h("button", { class: "btn primary", type: "submit" }, "Sign in");
-  const input = h("input", { class: "input", id: "pc", type: "password", name: "passcode", autocomplete: "current-password", required: true, "aria-describedby": "pc-err" });
+  const user = h("input", { class: "input", id: "un", type: "text", name: "username", autocomplete: "username", autocapitalize: "none", spellcheck: "false" });
+  const input = h("input", { class: "input", id: "pc", type: "password", name: "password", autocomplete: "current-password", required: true, "aria-describedby": "pc-err" });
   const form = h(
     "form",
     {
@@ -223,7 +224,7 @@ function signin() {
         btn.disabled = true;
         msg.textContent = "";
         try {
-          await api("POST", "/api/login", { passcode: input.value });
+          await api("POST", "/api/login", user.value.trim() ? { username: user.value.trim(), password: input.value } : { passcode: input.value });
           input.value = "";
           load(await api("GET", "/api/catalog"));
           state.phase = "ready";
@@ -239,10 +240,11 @@ function signin() {
         }
       },
     },
-    h("div", { class: "field" }, h("label", { for: "pc" }, "Passcode"), input, h("p", { class: "help" }, "Ask your sales lead if you don't have it."), msg),
+    h("div", { class: "field" }, h("label", { for: "un" }, "Username ", h("span", { class: "muted" }, "(admins only)")), user),
+    h("div", { class: "field" }, h("label", { for: "pc" }, "Password or team passcode"), input, h("p", { class: "help" }, "Team members: leave username empty and enter the passcode from your sales lead."), msg),
     btn,
   );
-  setTimeout(() => input.focus(), 0);
+  setTimeout(() => user.focus(), 0);
   return h("main", { class: "signin" }, h("div", { class: "signin-box" }, h("p", { class: "kicker" }, "ve-backend"), h("h1", {}, "Sales editor"), h("p", { class: "muted" }, "Update products, prices, categories and the look of your store."), form), credit());
 }
 const credit = () => h("p", { class: "credit" }, "ve-backend · Store UI and sales editor adapted from ", h("strong", {}, "Hangr"), ".");

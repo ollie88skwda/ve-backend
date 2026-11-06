@@ -28,7 +28,7 @@ test("reads the passcode from .env.ve-backend.local (quotes stripped)", () => {
 });
 
 test("refuses to start without a passcode", () => {
-  assert.throws(() => createEditorServer({ root, passcode: "" }), /VE_EDITOR_NO_PASSCODE/);
+  assert.throws(() => createEditorServer({ root, passcode: "", env: { VE_ADMINS_FILE: path.join(root, "no-admins.json") } }), /VE_EDITOR_NO_PASSCODE/);
 });
 
 test("API is locked until sign-in; wrong passcode is rejected", async () => {
@@ -81,4 +81,25 @@ test("serves the editor UI, library modules and the site's public files, but not
   assert.equal((await fetch(base + "/ve/render.js")).status, 200);
   assert.equal((await fetch(base + "/..%2f.env.ve-backend.local")).status, 404);
   assert.equal((await fetch(base + "/../src/data/ve.catalog.json")).status, 404);
+});
+
+test("personal admin accounts sign in to any editor; wrong password and unknown users fail", async () => {
+  const { mkdtemp } = await import("node:fs/promises");
+  const os = await import("node:os");
+  const { setAdmin, verifyPassword, readAdmins } = await import("../editor/server.mjs");
+  const dir = await mkdtemp(path.join(os.tmpdir(), "ve-admins-"));
+  const env = { VE_ADMINS_FILE: path.join(dir, "admins.json") };
+  setAdmin("Oliver", "correct horse battery", env);
+  assert.ok(verifyPassword("correct horse battery", readAdmins(env).oliver.hash));
+  assert.throws(() => setAdmin("x", "short", env), /VE_ADMIN/);
+
+  const second = createEditorServer({ root, passcode: "", env });
+  const { port } = await second.listen(0, "127.0.0.1");
+  const login = (b) => fetch(`http://127.0.0.1:${port}/api/login`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(b) });
+  assert.equal((await login({ username: "oliver", password: "correct horse battery" })).status, 200);
+  assert.equal((await login({ username: "OLIVER", password: "correct horse battery" })).status, 200);
+  assert.equal((await login({ username: "oliver", password: "wrong password!" })).status, 401);
+  assert.equal((await login({ username: "nobody", password: "correct horse battery" })).status, 401);
+  assert.equal((await login({ passcode: "open sesame" })).status, 401); // no team passcode on this one
+  await second.close();
 });

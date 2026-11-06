@@ -8,10 +8,12 @@ A plug-and-play storefront for **Virtual Enterprise (VE)** student companies. On
 
 > Store UI and sales editor adapted from **Hangr** (a VE company store). Thanks to the Hangr team.
 
+**Using an AI coding agent?** Point it at [`AGENTS.md`](AGENTS.md). It covers the rules, and `docs/` covers the functional contract (`data-ve-*` hooks, events), theming and custom-markup recipes, integration, catalog fields, the editor and error codes, so an agent can restyle the store without breaking cart or checkout.
+
 ## Install
 
 ```sh
-npm install github:ollie88skwda/ve-backend#semver:^0.1.0
+npm install github:ollie88skwda/ve-backend#semver:^0.2.0
 npx ve-backend init        # adds src/data/ve.catalog.json, a passcode file and shop pages
 npm run editor             # opens the sales editor at http://127.0.0.1:4410/
 ```
@@ -19,10 +21,10 @@ npm run editor             # opens the sales editor at http://127.0.0.1:4410/
 ### Updating
 
 ```sh
-npm update ve-backend      # picks up the newest v0.x.y tag on GitHub
+npm update ve-backend      # picks up the newest v0.2.x tag on GitHub
 ```
 
-Releases are git tags (`v0.1.0`, `v0.1.1`, …). `#semver:^0.1.0` means "newest 0.x release". Pin an exact version with `#v0.1.0`.
+Releases are git tags (`v0.1.0`, `v0.1.1`, …). `#semver:^0.2.0` means "newest 0.2.x release" (for 0.x versions npm treats the middle number as breaking, so moving to 0.3.0 means editing the install line). Pin an exact version with `#v0.1.0`.
 
 ### Developing the library against a live site
 
@@ -100,8 +102,8 @@ The wrappers render the same HTML as Astro and start the browser runtime on the 
 
 ```html
 <meta name="ve-catalog" content="/ve.catalog.json">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.1/src/styles.css">
-<script type="module" src="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.1.1/src/runtime.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.2.0/src/styles.css">
+<script type="module" src="https://cdn.jsdelivr.net/gh/ollie88skwda/ve-backend@v0.2.0/src/runtime.js"></script>
 
 <ve-cart-button></ve-cart-button>
 <ve-product-grid category="bouquets"></ve-product-grid>
@@ -168,6 +170,7 @@ npx ve-backend editor [--port 4410] [--host 127.0.0.1] [--catalog src/data/ve.ca
 ```
 
 - **Passcode**: `VE_EDITOR_PASSCODE` from the environment, or from `.env.ve-backend.local` in the site root (`init` creates one and adds it to `.gitignore`). The passcode is never printed or logged. Five wrong tries locks sign-in for five minutes.
+- **Personal admin logins**: `ve-backend admin set <username>` (password from stdin or `VE_ADMIN_PASSWORD`) creates a login that works in every ve-backend editor run by the same user on this computer. Stored as scrypt hashes in `~/.config/ve-backend/admins.json` (override with `VE_ADMINS_FILE`). Also `ve-backend admin list` and `ve-backend admin remove <username>`. Sign in with your username and password; leave the username empty to use the team passcode. See `docs/editor.md`.
 - **Products**: add, duplicate, delete, drag to reorder, show/hide, feature. Edit name, prices, compare-at price, badge, offer, category, card tint, description, highlights, photos (upload or use an existing site image; reorder; alt text), options with price changes, bundle size, per-product checkout, web address.
 - **Live preview**: product card or full product page, desktop or phone width, rendered with the same code as the site, updating as you type.
 - **Categories**, **Look** (colors, fonts, card/button shape, photo fit, tints, motion) and **Store settings** (checkout mode and POS link, company, contact, announcement).
