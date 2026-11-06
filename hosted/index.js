@@ -88,9 +88,25 @@ export function createHostedEditor(options = {}) {
 
   // ---------- catalog storage with history ----------
   const CURRENT = "catalog-current";
+  // Content blocks/fields that the site's seed gained after the first save (new editable sections shipped in a deploy)
+  // are added to the stored catalog on read, so they show up in the editor and the live overlay without losing saved values.
+  const withSeedContent = (catalog) => {
+    if (!Array.isArray(seed.content) || !seed.content.length) return catalog;
+    const stored = Array.isArray(catalog.content) ? catalog.content : [];
+    let changed = !Array.isArray(catalog.content);
+    const content = stored.map((b) => {
+      const sb = b && seed.content.find((x) => x.id === b.id);
+      const missing = sb && Array.isArray(b.fields) ? sb.fields.filter((f) => !b.fields.some((x) => x.id === f.id)) : [];
+      if (!missing.length) return b;
+      changed = true;
+      return { ...b, fields: [...b.fields, ...structuredClone(missing)] };
+    });
+    for (const sb of seed.content) if (!stored.some((b) => b && b.id === sb.id)) { content.push(structuredClone(sb)); changed = true; }
+    return changed ? { ...catalog, content } : catalog;
+  };
   const readCurrent = async () => {
     const doc = await storage.get(CURRENT);
-    if (doc && doc.catalog && typeof doc.catalog === "object") return { history: [], ...doc };
+    if (doc && doc.catalog && typeof doc.catalog === "object") return { history: [], ...doc, catalog: withSeedContent(doc.catalog) };
     return { catalog: seed, version: 0, savedAt: null, savedBy: null, history: [] };
   };
   const payload = (doc) => ({

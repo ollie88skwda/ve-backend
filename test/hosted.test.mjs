@@ -313,3 +313,21 @@ test("live overlay helpers: fetch, content fallback, product merge", async () =>
   assert.equal(await fetchLiveCatalog("/x", { fetchImpl: async () => new Response("{}", { headers: { "content-type": "application/json" } }) }), null);
   assert.equal(getContent(live, "hero").title, "Live title");
 });
+
+test("content blocks added to the seed after the first save appear in the stored catalog without losing saved values", async () => {
+  const old = structuredClone(seed);
+  old.content = [{ id: "hero", label: "Hero", fields: [{ id: "title", label: "Title", type: "text", value: "Saved by alex" }] }];
+  const st = memoryStorage();
+  await st.put("catalog-current", { catalog: old, version: 3, savedAt: "2026-01-01T00:00:00.000Z", savedBy: "alex", history: [] });
+  const newer = structuredClone(seed);
+  newer.content = [...old.content, { id: "about", label: "About", fields: [{ id: "photos", label: "Photos", type: "gallery", value: [] }] }];
+  const ed = createHostedEditor({ storage: st, seed: newer, env: () => env });
+  const first = await login("alex", "correct horse battery");
+  const ck = first.headers.get("set-cookie").split(";")[0];
+  const got = await (await ed.admin(req("GET", "/api/admin/catalog", { headers: { cookie: ck } }))).json();
+  assert.ok(got.catalog.content.some((b) => b.id === "about"));
+  assert.equal(got.version, 3);
+  assert.equal(got.catalog.content.find((b) => b.id === "hero").fields[0].value, "Saved by alex");
+  const pub = await (await ed.publicCatalog(new Request(`${ORIGIN}/api/catalog`))).json();
+  assert.ok(pub.catalog.content.some((b) => b.id === "about"));
+});

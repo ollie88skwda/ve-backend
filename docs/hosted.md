@@ -116,6 +116,7 @@ Shared helpers in `ve-backend/live`: `fetchLiveCatalog(url?)` (never throws, ret
 - Saves use a version check: the editor sends the version it loaded (`?version=`); if someone else saved since, the server answers 409 `VE_HOSTED_STALE` ("Someone else saved changes. Reload to see them before saving.") and the editor offers **Reload latest**. A client that sends no version (old editor) still overwrites. The check is per function instance (not an atomic lock), so two saves in the same instant can still race; Undo (30 versions) recovers.
 - The public catalog is sent with `Cache-Control: public, max-age=0, s-maxage=5, stale-while-revalidate=30` (override with `publicCache`), so a save shows on the site within seconds.
 - Login lockout: 5 failed tries per account+network address and 20 per address for 15 minutes, so a stranger can't lock out a real user. Each limit is one fixed storage key with its expiry inside. The dummy hash for unknown users uses the highest iteration count among configured users so timing doesn't reveal usernames.
+- New content blocks/fields added to the bundled seed after the first save (for example a new gallery) are merged into the stored catalog on read; saved values are never overwritten, and the next save persists the merge.
 - `ve-backend/hosted` loads `node:fs` lazily; `uiFile()` needs Node (use it in a build step).
 
 The hosted editor has **no team passcode**; use named users.
