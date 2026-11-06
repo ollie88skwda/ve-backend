@@ -15,6 +15,7 @@ Default location: `src/data/ve.catalog.json`. Override with `--catalog`, or `"ve
   "contact": {},
   "checkout": {},
   "theme": {},
+  "content": [],
   "categories": [],
   "products": []
 }
@@ -57,6 +58,10 @@ Per-product `checkout` and `posUrl` override these (e.g. bundles go to POS, ever
 
 `announcement`: `enabled`, `text` (≤140, required if enabled), `linkLabel` (≤30), `link` (https or `/path`). Exposed for the site to render.
 `contact`: `email` (valid address), `phone` (≤30), `location`, `hours`, `instagram` (https). The email shows under the product buy box.
+
+## `content[]` (up to 40 blocks)
+
+Editable page copy (hero slogan, banners, button labels). Full format and rules in `docs/content.md`.
 
 ## `categories[]` (up to 20)
 

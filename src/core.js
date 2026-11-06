@@ -7,6 +7,8 @@ export const CARD_STYLES = ["arch", "rounded", "flat"];
 export const BUTTON_STYLES = ["pill", "rounded", "square"];
 export const IMAGE_FITS = ["contain", "cover"];
 export const MAX_QUANTITY = 10;
+/** Field types for editable site content blocks (catalog.content). */
+export const CONTENT_TYPES = ["text", "textarea", "link", "image", "toggle"];
 
 const KEBAB = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const COLOR = /^(#[0-9a-fA-F]{3,8}|rgb\(.+\)|rgba\(.+\)|hsl\(.+\)|oklch\(.+\)|color-mix\(.+\)|var\(--[a-zA-Z0-9-]+\)|[a-z]+)$/;
@@ -72,6 +74,7 @@ export const DEFAULT_CATALOG = {
   contact: { email: "", phone: "", location: "", hours: "", instagram: "" },
   checkout: { mode: "demo", posUrl: "", orderPrefix: "VE", posLabel: "Pay in VE Trade Show POS", note: "Educational Virtual Enterprise store. No real payment is taken and nothing ships." },
   theme: DEFAULT_THEME,
+  content: [],
   categories: [],
   products: [],
 };
@@ -202,6 +205,7 @@ export function validateCatalog(input) {
   if (!/^[A-Z0-9]{1,6}$/.test(out.checkout.orderPrefix)) err("checkout.orderPrefix", "Order prefix: letters and numbers only, up to 6.");
 
   out.theme = validateTheme(input.theme || {}, err);
+  out.content = validateContent(input.content, { errors, err, text, link, image });
 
   const catsIn = Array.isArray(input.categories) ? input.categories : null;
   out.categories = [];
@@ -336,6 +340,86 @@ export function validateCatalog(input) {
     });
   }
   return Object.keys(errors).length ? { errors } : { value: out };
+}
+
+/**
+ * Editable site content: blocks of named fields (hero slogan, banner text, button labels…) that
+ * agents declare in the catalog and admins edit in the sales editor. Pages read them with getContent().
+ */
+const CONTENT_ID = /^[a-z][a-zA-Z0-9_-]{0,39}$/;
+function validateContent(input, { errors, err, text, link, image }) {
+  if (input === undefined || input === null) return [];
+  if (!Array.isArray(input)) {
+    err("content", "Site content should be a list of blocks.");
+    return [];
+  }
+  if (input.length > 40) err("content", "You can have up to 40 content blocks.");
+  const out = [];
+  const seenBlocks = new Set();
+  input.slice(0, 40).forEach((b, i) => {
+    const k = `content.${i}`;
+    b = b && typeof b === "object" ? b : {};
+    const id = typeof b.id === "string" ? b.id.trim() : "";
+    if (!CONTENT_ID.test(id)) err(`${k}.id`, "Block id should be a short name like hero or holidayBanner (letters, numbers, - or _).");
+    else if (seenBlocks.has(id)) err(`${k}.id`, `Block id “${id}” is used twice.`);
+    seenBlocks.add(id);
+    const block = {
+      id,
+      label: text(b.label || id, `${k}.label`, { label: "Block name", max: 60 }),
+      help: text(b.help, `${k}.help`, { label: "Block help", max: 240 }),
+      fields: [],
+    };
+    if (!Array.isArray(b.fields) || !b.fields.length) err(`${k}.fields`, "Add at least one field to this block.");
+    const seenFields = new Set();
+    (Array.isArray(b.fields) ? b.fields : []).slice(0, 40).forEach((f, j) => {
+      const fk = `${k}.fields.${j}`;
+      f = f && typeof f === "object" ? f : {};
+      const fid = typeof f.id === "string" ? f.id.trim() : "";
+      if (!CONTENT_ID.test(fid)) err(`${fk}.id`, "Field id should be a short name like title or buttonLabel.");
+      else if (seenFields.has(fid)) err(`${fk}.id`, `Field id “${fid}” is used twice in this block.`);
+      seenFields.add(fid);
+      const type = CONTENT_TYPES.includes(f.type) ? f.type : f.type === undefined ? "text" : (err(`${fk}.type`, `Field type should be one of: ${CONTENT_TYPES.join(", ")}.`), "text");
+      const label = text(f.label || fid, `${fk}.label`, { label: "Field name", max: 60 });
+      const max = Math.min(Math.max(Number(f.max) || (type === "textarea" ? 1000 : 140), 1), 5000);
+      const field = { id: fid, label, type, help: text(f.help, `${fk}.help`, { label: "Field help", max: 240 }), required: f.required === true };
+      if (type === "text" || type === "textarea") {
+        field.max = max;
+        field.value = text(f.value, `${fk}.value`, { label, max, required: field.required });
+        if (type === "text" && field.value.includes("\n")) err(`${fk}.value`, `${label} should be one line.`);
+      } else if (type === "link") {
+        const raw = typeof f.value === "string" ? f.value.trim() : f.value;
+        const inPage = typeof raw === "string" && /^#[A-Za-z][\w-]{0,80}$/.test(raw);
+        const mail = typeof raw === "string" && /^mailto:[^\s@<>"]+@[^\s@<>"]+$/.test(raw) && raw.length <= 200;
+        field.value = inPage || mail ? raw : link(f.value, `${fk}.value`, label);
+        if (!inPage && !mail && errors[`${fk}.value`]) errors[`${fk}.value`] = `${label} should be a page on this site like /shop/, a section like #bundles, a mailto: address, or an https:// link.`;
+        if (field.required && !field.value) err(`${fk}.value`, `${label} can't be empty.`);
+      } else if (type === "image") {
+        field.value = image(f.value, `${fk}.value`, label);
+        field.alt = text(f.alt, `${fk}.alt`, { label: `${label} description`, max: 160 });
+        if (field.required && !field.value) err(`${fk}.value`, `${label} can't be empty.`);
+      } else {
+        field.value = f.value === true;
+      }
+      block.fields.push(field);
+    });
+    out.push(block);
+  });
+  return out;
+}
+
+/**
+ * Read one content block as { fieldId: value }. Image fields also give `<id>Alt`.
+ * Pass fallbacks so the page still renders if the block is missing:
+ *   const hero = getContent(catalog, "hero", { title: "Always in bloom" });
+ */
+export function getContent(catalog, blockId, fallback = {}) {
+  const block = (catalog?.content || []).find((b) => b.id === blockId);
+  const out = { ...fallback };
+  for (const f of block?.fields || []) {
+    if (f.type === "toggle" || f.value !== "") out[f.id] = f.value;
+    if (f.type === "image" && f.alt) out[`${f.id}Alt`] = f.alt;
+  }
+  return out;
 }
 
 function validateTheme(t, err) {
@@ -588,6 +672,7 @@ export function publicCatalog(catalog) {
     shop: catalog.shop,
     checkout: catalog.checkout,
     contact: { email: catalog.contact.email },
+    content: catalog.content || [],
     theme: { card: catalog.theme.card, tints: Object.fromEntries(Object.keys(catalog.theme.tints).map((k) => [k, ""])) },
     categories: catalog.categories.map(({ slug, name, visible }) => ({ slug, name, visible })),
     products: catalog.products.filter((p) => p.visible),

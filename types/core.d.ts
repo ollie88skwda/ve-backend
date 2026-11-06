@@ -42,6 +42,10 @@ export interface Theme {
   tints: Record<string, string>;
   motion: boolean;
 }
+export type ContentFieldType = "text" | "textarea" | "link" | "image" | "toggle";
+export interface ContentField { id: string; label: string; type: ContentFieldType; help?: string; required?: boolean; max?: number; value: string | boolean; alt?: string }
+/** An editable block of site content (hero, banner…) declared by the site and edited in the sales editor. */
+export interface ContentBlock { id: string; label: string; help?: string; fields: ContentField[] }
 export interface Catalog {
   version: 1;
   company: { name: string; tagline?: string; currency: string; locale: string; url?: string };
@@ -50,6 +54,7 @@ export interface Catalog {
   contact: { email: string; phone: string; location: string; hours: string; instagram: string };
   checkout: { mode: CheckoutMode; posUrl: string; orderPrefix: string; posLabel: string; note: string };
   theme: Theme;
+  content: ContentBlock[];
   categories: Category[];
   products: Product[];
 }
@@ -69,6 +74,9 @@ export const CHECKOUT_FIELDS: (keyof CheckoutValues)[];
 export function slugify(text: string): string;
 export function validateCatalog(input: unknown): { value: Catalog; errors?: undefined } | { errors: Record<string, string>; value?: undefined };
 export function loadCatalog(input: unknown): Catalog;
+export const CONTENT_TYPES: ContentFieldType[];
+/** One content block as { fieldId: value } (image fields also give `<id>Alt`), over the given fallbacks. */
+export function getContent<T extends Record<string, string | boolean> = Record<string, string>>(catalog: Catalog | unknown, blockId: string, fallback?: Partial<T>): T & Record<string, string | boolean>;
 export function visibleProducts(catalog: Catalog, category?: string): Product[];
 export function findProduct(catalog: Catalog, slug: string): Product | null;
 export function findCategory(catalog: Catalog, slug: string): Category | null;

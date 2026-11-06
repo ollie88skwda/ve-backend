@@ -1,6 +1,6 @@
 # Sales editor and logins
 
-The sales editor is a local web app that lets non-coders change products, prices, photos, checkout and theme with a live preview. It writes `ve.catalog.json` and saves photos into the site's `public/uploads/`.
+The sales editor is a local web app that lets non-coders change products, prices, photos, site content (hero slogan and other blocks from `docs/content.md`), checkout and theme with a live preview. It writes `ve.catalog.json` and saves photos into the site's `public/uploads/`.
 
 ```sh
 npm run editor                        # added by `init`; same as: npx ve-backend editor

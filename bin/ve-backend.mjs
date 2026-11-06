@@ -8,7 +8,7 @@ import { validateCatalog } from "../src/core.js";
 import { createEditorServer, readPasscode, readAdmins, setAdmin, removeAdmin, adminsFile, PASSCODE_ENV, PASSCODE_FILE } from "../editor/server.mjs";
 
 const LIB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const HELP = `ve-backend: storefront + sales editor for Virtual Enterprise companies
+const HELP = `ve-backend: storefront, site content + sales editor for Virtual Enterprise companies
 
 Usage:
   ve-backend init [--astro|--html] [--force]   Add a catalog, passcode file and shop pages to this site
@@ -102,7 +102,7 @@ if (cmd === "validate") {
     process.exit(1);
   }
   const placeholders = result.value.products.filter((p) => p.placeholder);
-  console.log(`${path.relative(root, file)} is valid: ${result.value.products.length} products, ${result.value.categories.length} categories, checkout "${result.value.checkout.mode}".`);
+  console.log(`${path.relative(root, file)} is valid: ${result.value.products.length} products, ${result.value.categories.length} categories, ${result.value.content.length} content blocks, checkout "${result.value.checkout.mode}".`);
   if (placeholders.length) console.log(`Placeholder prices to confirm: ${placeholders.map((p) => p.name).join(", ")}`);
   process.exit(0);
 }

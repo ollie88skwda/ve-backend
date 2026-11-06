@@ -96,6 +96,7 @@ Use these to drive custom UI (a cart drawer, a confetti burst, an analytics ping
 - `checkout.mode` is `demo`, `pos` or `both`; `pos`/`both` require `checkout.posUrl` (https).
 - `placeholder: true` marks an unconfirmed price; the card shows "Placeholder price, to be confirmed". Remove the flag only when a human confirms the price.
 - `checkout.note` keeps the educational disclaimer.
+- `content` block and field `id`s are read by page code; never rename or remove one without updating the component that reads it.
 
 ## 6. Accessibility invariants
 

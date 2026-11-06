@@ -7,6 +7,7 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 - One JSON catalog (`ve.catalog.json`) drives product cards, category pages, product pages, a cart, and checkout.
 - Checkout is either an educational demo form (`demo`), a link to the company's VE Trade Show POS (`pos`), or both.
 - A local sales editor (`npx ve-backend editor`) lets humans edit the catalog with a live preview.
+- The catalog's `content` blocks make any page copy (hero slogan, banners, button labels) editable by admins in the editor's **Site content** tab. Agents decide which fields exist; admins change the values.
 - Source is plain ESM JavaScript + CSS with no build step. Astro components, React wrappers and plain-HTML custom elements all render the same HTML from `src/render.js`.
 
 ## Read next (in order, only what the task needs)
@@ -14,10 +15,11 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 1. `docs/contract.md`: the functional contract. The `data-ve-*` hooks, element names, events and catalog fields you must not break.
 2. `docs/customizing.md`: the three layers of customization and recipes for making the store look like the brand.
 3. `docs/integrate.md`: adding ve-backend to an Astro, Next/React or plain HTML site.
-4. `docs/catalog.md`: every catalog field, with validation rules.
-5. `docs/editor.md`: sales editor, logins, passcodes.
-6. `docs/troubleshooting.md`: stable error codes and fixes.
-7. `docs/maintaining.md`: only if you are changing this library itself (releases, tests).
+4. `docs/content.md`: making any page section (hero slogan, banners, button text) editable by admins.
+5. `docs/catalog.md`: every catalog field, with validation rules.
+6. `docs/editor.md`: sales editor, logins, passcodes.
+7. `docs/troubleshooting.md`: stable error codes and fixes.
+8. `docs/maintaining.md`: only if you are changing this library itself (releases, tests).
 
 ## Golden rules
 
@@ -37,6 +39,7 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 | Add store to an Astro site | `npm install github:ollie88skwda/ve-backend#semver:^0.2.0` → `npx ve-backend init --astro` → edit catalog → `npx ve-backend validate` |
 | Add/edit a product | Edit `src/data/ve.catalog.json` (or `npm run editor`), then `npx ve-backend validate` |
 | Make cards match the brand | Set `theme` in the catalog (colors, fonts, `card`, `button`, `tints`), then fine-tune in site CSS. See `docs/customizing.md` |
+| "Make the hero/banner/text editable in ve-backend" | Add a block to `content` in the catalog, read it with `getContent()` in the component. See `docs/content.md` |
 | Show products on the home page | `<VeHead catalog={raw} />` once per page, then `<ProductGrid catalog={raw} category="…" />` |
 | Send buyers to the VE POS | `checkout.mode: "pos"` and `checkout.posUrl: "https://portal.veinternational.org/tradeshowpos/…/newsale/"` |
 | Update the library in a site | `npm update ve-backend` then rebuild and rerun the checklist |

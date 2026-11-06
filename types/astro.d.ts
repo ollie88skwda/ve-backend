@@ -1,6 +1,6 @@
 import type { Catalog } from "./core";
 export function ensureCatalog(raw: unknown): Catalog;
-export { getShopPaths, findProduct, findCategory, visibleProducts, formatMoney, productUrl, categoryUrl, unitPrice, perUnit, loadCatalog } from "./core";
+export { getShopPaths, findProduct, findCategory, visibleProducts, formatMoney, productUrl, categoryUrl, unitPrice, perUnit, loadCatalog, getContent } from "./core";
 export const VeHead: any;
 export const ProductCard: any;
 export const ProductGrid: any;

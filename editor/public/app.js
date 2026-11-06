@@ -133,7 +133,7 @@ async function save() {
         state.tab = "products";
         toast(`${e.message} (Check “${state.catalog.products[+pm[1]]?.name || "a product"}”.)`, "bad");
       } else {
-        const tabFor = { categories: "categories", theme: "look", company: "settings", shop: "settings", checkout: "settings", contact: "settings", announcement: "settings" };
+        const tabFor = { content: "content", categories: "categories", theme: "look", company: "settings", shop: "settings", checkout: "settings", contact: "settings", announcement: "settings" };
         const t = tabFor[first.split(".")[0]];
         if (t && state.editing < 0) state.tab = t;
         toast(`${e.message} ${Object.values(e.data.errors)[0]}`, "bad");
@@ -250,7 +250,7 @@ function signin() {
 const credit = () => h("p", { class: "credit" }, "ve-backend · Store UI and sales editor adapted from ", h("strong", {}, "Hangr"), ".");
 
 function shell() {
-  const tabs = [["products", "Products"], ["categories", "Categories"], ["look", "Look"], ["settings", "Store settings"]];
+  const tabs = [["products", "Products"], ["content", "Site content"], ["categories", "Categories"], ["look", "Look"], ["settings", "Store settings"]];
   const wrap = h("div", {});
   wrap.append(
     h("header", { class: "topbar" }, h("div", { class: "topbar-in" },
@@ -263,7 +263,7 @@ function shell() {
         onclick: () => { state.tab = id; render(); },
         onkeydown: (e) => { const i = tabs.findIndex((t) => t[0] === id); const n = e.key === "ArrowRight" ? i + 1 : e.key === "ArrowLeft" ? i - 1 : null; if (n == null) return; e.preventDefault(); state.tab = tabs[(n + tabs.length) % tabs.length][0]; render(); document.getElementById(`tab-${state.tab}`).focus(); },
       }, label))),
-      h("section", { id: "tabpanel", role: "tabpanel", "aria-labelledby": `tab-${state.tab}` }, state.tab === "products" ? productsTab() : state.tab === "categories" ? categoriesTab() : state.tab === "look" ? lookTab() : settingsTab()),
+      h("section", { id: "tabpanel", role: "tabpanel", "aria-labelledby": `tab-${state.tab}` }, state.tab === "products" ? productsTab() : state.tab === "content" ? contentTab() : state.tab === "categories" ? categoriesTab() : state.tab === "look" ? lookTab() : settingsTab()),
       credit()),
     savebar());
   if (state.editing >= 0 && C().products[state.editing]) wrap.append(drawer());
@@ -574,6 +574,32 @@ function drawer() {
   holder.append(h("div", { class: "scrim", onclick: close }), dr);
   if (!document.activeElement?.dataset?.k?.startsWith(`p${i}`)) setTimeout(() => { const n = dr.querySelector(`[data-k="p${i}-name"]`); if (n && !dr.contains(document.activeElement)) n.focus({ preventScroll: true }); }, 0);
   return holder;
+}
+
+// ---------- site content (blocks declared in catalog.content by the site's developer) ----------
+function contentTab() {
+  const blocks = (C().content = C().content || []);
+  const fieldFor = (b, bi, f, fi) => {
+    const key = `cb${bi}-${f.id || fi}`;
+    const errKey = `content.${bi}.fields.${fi}.value`;
+    const help = [f.help, f.type === "link" ? "A page on this site like /shop/, a section like #bundles, or an https:// link." : ""].filter(Boolean).join(" ");
+    if (f.type === "toggle") return h("div", { class: "field" }, switchField({ label: f.label, checked: f.value === true, key, onchange: (v) => { f.value = v; } }), help ? h("p", { class: "help" }, help) : null);
+    if (f.type === "image") {
+      return h("div", { class: "grid2" },
+        textField({ label: f.label, help: help || "A site image like /assets/img/photo.webp, or an https:// link.", key, errKey, max: 500, get: () => f.value, set: (v) => { f.value = v; }, attrs: { autocomplete: "off", spellcheck: "false" } }),
+        textField({ label: `${f.label} description`, help: "Describes the image for screen readers.", key: `${key}-alt`, errKey: `content.${bi}.fields.${fi}.alt`, max: 160, get: () => f.alt, set: (v) => { f.alt = v; } }));
+    }
+    return textField({ label: f.label, help, key, errKey, max: f.max || (f.type === "textarea" ? 1000 : 140), textarea: f.type === "textarea", rows: f.type === "textarea" ? 3 : undefined, get: () => f.value, set: (v) => { f.value = v; }, attrs: f.type === "link" ? { autocomplete: "off", spellcheck: "false" } : {} });
+  };
+  return h("div", {},
+    h("div", { class: "section-head" }, h("div", {}, h("h1", {}, "Site content"), h("p", {}, "Words and pictures on your pages, like the hero slogan. Change them here and save; the site updates in a few seconds."))),
+    blocks.length
+      ? blocks.map((b, bi) => h("div", { class: "panel", "data-block": b.id },
+          h("h2", { class: "panel-title" }, b.label || b.id),
+          b.help ? h("p", { class: "help" }, b.help) : null,
+          (b.fields || []).map((f, fi) => fieldFor(b, bi, f, fi))))
+      : h("div", { class: "empty" }, "No editable content yet. Ask whoever builds your site (or your AI agent) to make a section editable in ve-backend, and it shows up here."),
+    err("content") ? h("p", { class: "error" }, err("content")) : null);
 }
 
 // ---------- categories ----------
