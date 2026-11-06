@@ -5,6 +5,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCatalog } from "../src/core.js";
+import { hashPassword, normalizeUser, parseUsers } from "../hosted/auth.js";
 import { createEditorServer, readPasscode, readAdmins, setAdmin, removeAdmin, adminsFile, PASSCODE_ENV, PASSCODE_FILE } from "../editor/server.mjs";
 
 const LIB = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -18,6 +19,10 @@ Usage:
   ve-backend admin set <username>              Create/replace a personal admin login (password from
                                                VE_ADMIN_PASSWORD or stdin) that works in every editor
   ve-backend admin list | remove <username>    List or remove personal admin logins
+  ve-backend hosted-user add <username>        Hosted (Vercel) editor user: password from VE_ADMIN_PASSWORD or stdin;
+                                               prints the new VE_ADMIN_USERS value (hashes only, never the password)
+  ve-backend hosted-user remove <username> | list
+                                               Both read the current value from VE_ADMIN_USERS or --users <file>
 
 Settings can also live in package.json under "ve-backend": { "catalog", "publicDir", "siteUrl", "port" }.
 Passcode: ${PASSCODE_ENV} in the environment or in ${PASSCODE_FILE} (gitignored, never printed).`;
@@ -90,6 +95,55 @@ if (cmd === "admin") {
     process.exit(0);
   }
   fail("VE_ADMIN_BAD_COMMAND", `unknown admin command "${sub || ""}".`, "use: ve-backend admin set|list|remove");
+}
+
+if (cmd === "hosted-user") {
+  const [, sub, rawName] = opts._;
+  const envName = typeof opts.env === "string" ? opts.env : "VE_ADMIN_USERS";
+  let current = process.env[envName] || "";
+  if (typeof opts.users === "string") {
+    try {
+      current = fs.readFileSync(path.resolve(root, opts.users), "utf8").trim();
+    } catch {
+      current = "";
+    }
+  }
+  const users = parseUsers(current) || {};
+  const name = normalizeUser(rawName);
+  const emit = (value) => {
+    const text = JSON.stringify(value);
+    if (typeof opts.out === "string") {
+      fs.writeFileSync(path.resolve(root, opts.out), `${text}\n`, { mode: 0o600 });
+      fs.chmodSync(path.resolve(root, opts.out), 0o600);
+      console.log(`Wrote ${envName} value to ${opts.out} (mode 600, hashes only). Set it with:  vercel env add ${envName} <environment> --sensitive < ${opts.out}`);
+    } else {
+      console.log(`${envName}=${text}`);
+      console.error(`[ve-backend] This is the new ${envName} value (password hashes only). Set it in your host, e.g. \`vercel env add ${envName} production --sensitive\`, then redeploy.`);
+    }
+  };
+  if (sub === "list") {
+    const names = Object.keys(users);
+    console.log(names.length ? `Hosted users in ${envName}:\n  ${names.join("\n  ")}` : `No hosted users in ${envName} yet.`);
+    process.exit(0);
+  }
+  if (sub === "remove") {
+    if (!name) fail("VE_ADMIN_NO_USERNAME", "missing username.", "ve-backend hosted-user remove <username>");
+    if (!users[name]) fail("VE_HOSTED_USER_UNKNOWN", `${name} is not in ${envName}.`, "run `ve-backend hosted-user list` with the current value in the environment or --users <file>.");
+    delete users[name];
+    emit(users);
+    process.exit(0);
+  }
+  if (sub === "add") {
+    if (!/^[a-z0-9._-]{2,40}$/.test(name)) fail("VE_ADMIN_BAD_USERNAME", "use 2-40 letters, numbers, dots, dashes or underscores.", "ve-backend hosted-user add <username>");
+    let password = process.env.VE_ADMIN_PASSWORD || "";
+    if (!password && !process.stdin.isTTY) password = fs.readFileSync(0, "utf8").replace(/\r?\n$/, "");
+    if (!password) fail("VE_ADMIN_NO_PASSWORD", "no password given.", "pipe it on stdin or set VE_ADMIN_PASSWORD (it is never printed).");
+    if (password.length < 10) fail("VE_ADMIN_WEAK_PASSWORD", "use at least 10 characters.", "choose a longer password.");
+    users[name] = await hashPassword(password);
+    emit(users);
+    process.exit(0);
+  }
+  fail("VE_ADMIN_BAD_COMMAND", `unknown hosted-user command "${sub || ""}".`, "use: ve-backend hosted-user add|remove|list");
 }
 
 if (cmd === "validate") {

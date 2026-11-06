@@ -14,5 +14,7 @@ export function initReveal(root?: ParentNode): void;
 export function checkoutModeFor(catalog: Catalog, items?: unknown[]): CheckoutMode;
 declare global {
   interface Window { veCart?: CartApi }
-  interface DocumentEventMap { "ve:cart": CustomEvent<CartTotals> }
+  interface Window { veLiveCatalog?: Catalog }
+  interface DocumentEventMap { "ve:cart": CustomEvent<CartTotals>; "ve:live": CustomEvent<{ catalog: Catalog }> }
 }
+export function startLive(url?: string): Promise<Catalog | null>;

@@ -22,6 +22,7 @@ import {
   themeCss,
   MAX_QUANTITY,
 } from "./core.js";
+import { fetchLiveCatalog } from "./live.js";
 import { renderCartView, renderCheckoutView, renderConfirmation, renderProductCard, renderProductGrid, renderProductPage } from "./render.js";
 
 const EVENT = "ve:cart";
@@ -384,10 +385,28 @@ export function start() {
   initProductPages();
   initReveal();
   window.veCart = cartApi;
+  const liveMeta = document.querySelector('meta[name="ve-live"]');
+  if (liveMeta?.content) startLive(liveMeta.content);
   return cartApi;
 }
 
 export { checkoutModeFor };
+
+/**
+ * Live overlay: fetch the hosted editor's public catalog and make it the runtime catalog (cart prices, product lookups).
+ * Enabled by <meta name="ve-live" content="/api/catalog"> or by calling startLive(url). Fires a "ve:live" event on
+ * document with { catalog } so site code can re-render copy (use getContent(catalog, "hero")). Never throws; keeps the
+ * build-time catalog when the fetch fails.
+ */
+export async function startLive(url) {
+  const live = await fetchLiveCatalog(url);
+  if (!live) return null;
+  live.theme = live.theme || { tints: {} };
+  catalog = live;
+  window.veLiveCatalog = live;
+  document.dispatchEvent(new CustomEvent("ve:live", { detail: { catalog: live } }));
+  return live;
+}
 
 /**
  * Plain-HTML sites without a build step: <meta name="ve-catalog" content="/ve.catalog.json">.

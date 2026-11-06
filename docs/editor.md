@@ -1,5 +1,7 @@
 # Sales editor and logins
 
+> Editing the **live** site from the internet? See `docs/hosted.md` (hosted editor on Vercel, `ve-backend/hosted`). This page covers the local editor.
+
 The sales editor is a local web app that lets non-coders change products, prices, photos, site content (hero slogan and other blocks from `docs/content.md`), checkout and theme with a live preview. It writes `ve.catalog.json` and saves photos into the site's `public/uploads/`.
 
 ```sh
@@ -40,7 +42,7 @@ ve-backend admin remove <username>
 - Stored in `~/.config/ve-backend/admins.json` (mode 600) as salted scrypt hashes, never plaintext. Override the location with `VE_ADMINS_FILE`.
 - Usernames: 2–40 characters from `a-z 0-9 . _ -`, case-insensitive. Passwords: at least 10 characters.
 - Changes apply at the next sign-in, with no restart.
-- Admin logins don't carry over to other computers or to deployed sites. The public store has no login, because shoppers never sign in.
+- Admin logins don't carry over to other computers or to deployed sites (use `ve-backend hosted-user` for the hosted editor, `docs/hosted.md`). The public store has no login, because shoppers never sign in.
 
 Setting a password without it touching shell history:
 

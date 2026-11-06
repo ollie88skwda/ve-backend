@@ -13,7 +13,7 @@ A plug-and-play storefront for **Virtual Enterprise (VE)** student companies. On
 ## Install
 
 ```sh
-npm install github:ollie88skwda/ve-backend#semver:^0.2.0
+npm install github:ollie88skwda/ve-backend#semver:^0.3.0
 npx ve-backend init        # adds src/data/ve.catalog.json, a passcode file and shop pages
 npm run editor             # opens the sales editor at http://127.0.0.1:4410/
 ```
@@ -21,10 +21,10 @@ npm run editor             # opens the sales editor at http://127.0.0.1:4410/
 ### Updating
 
 ```sh
-npm update ve-backend      # picks up the newest v0.2.x tag on GitHub
+npm update ve-backend      # picks up the newest v0.3.x tag on GitHub
 ```
 
-Releases are git tags (`v0.1.0`, `v0.1.1`, …). `#semver:^0.2.0` means "newest 0.2.x release" (for 0.x versions npm treats the middle number as breaking, so moving to 0.3.0 means editing the install line). Pin an exact version with `#v0.1.0`.
+Releases are git tags (`v0.1.0`, `v0.1.1`, …). `#semver:^0.3.0` means "newest 0.3.x release" (for 0.x versions npm treats the middle number as breaking, so moving from 0.2 to 0.3 means editing the install line; 0.3.0 only adds the hosted editor and live overlay). Pin an exact version with `#v0.1.0`.
 
 ### Developing the library against a live site
 
@@ -162,6 +162,10 @@ Every theme value becomes a CSS variable, so you can also override them in your 
 | `--ve-sticky-top`, `--ve-max`, `--ve-gutter` | set these in your CSS to match your header height and page width |
 
 Card styles: `arch` (semicircle photo frame, tilting badge), `rounded` (bordered card with lift on hover), `flat` (square photo). Cards fade and rise in as they scroll into view; all motion is disabled for `prefers-reduced-motion`.
+
+## Hosted editor (edit the live site online)
+
+`ve-backend/hosted` serves the same sales editor from your Vercel site: Web-standard `(Request) => Response` handlers, env-configured hashed users (`npx ve-backend hosted-user add <name>`), a private Vercel Blob store, and a public `/api/catalog` the site reads at runtime (`useLiveCatalog`, `<VeHead live />`, `<meta name="ve-live">`) so saves show without a redeploy. New product pages on a static export still need a rebuild. Setup and the live/rebuild table: [`docs/hosted.md`](docs/hosted.md).
 
 ## Sales editor
 

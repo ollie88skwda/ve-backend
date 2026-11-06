@@ -14,7 +14,7 @@ Only for changes to ve-backend itself (this repo), not to a site using it.
 ## Test
 
 ```sh
-npm test                     # node:test suites in test/: catalog, cart, checkout, astro rendering, editor server + admin logins
+npm test                     # node:test suites in test/: catalog, cart, checkout, astro rendering, editor server + admin logins, hosted handlers (auth, CSRF, rate limit, undo, upload, public catalog)
 npm run demo                 # demo Astro site at examples/demo-site
 npm run editor:demo          # editor against the demo site
 ```
@@ -28,7 +28,7 @@ npm version patch            # or minor / major; creates the commit and vX.Y.Z t
 git push --follow-tags
 ```
 
-Sites on `#semver:^0.2.0` pick up 0.2.x releases with `npm update ve-backend`. When an npm account is logged in, `npm publish` also works; `package.json` is already set up for it.
+Sites on `#semver:^0.3.0` pick up 0.3.x releases with `npm update ve-backend`. When an npm account is logged in, `npm publish` also works; `package.json` is already set up for it.
 
 ## Credit
 

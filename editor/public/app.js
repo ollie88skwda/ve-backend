@@ -6,7 +6,7 @@ import { renderProductCard, renderProductPage, renderProductGrid } from "/ve/ren
 
 const $app = document.getElementById("app");
 const $toasts = document.getElementById("toasts");
-const state = { phase: "loading", catalog: null, saved: "", undoCount: 0, siteUrl: "", uploadBase: "/uploads/", tab: "products", editing: -1, errors: {}, saving: false, previewMode: "card", previewWidth: "desktop" };
+const state = { phase: "loading", catalog: null, saved: "", undoCount: 0, siteUrl: "", uploadBase: "/uploads/", maxUpload: 8 * 1024 * 1024, tab: "products", editing: -1, errors: {}, saving: false, previewMode: "card", previewWidth: "desktop" };
 
 const ICON = {
   grip: '<svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><circle cx="7" cy="5" r="1.6"/><circle cx="13" cy="5" r="1.6"/><circle cx="7" cy="10" r="1.6"/><circle cx="13" cy="10" r="1.6"/><circle cx="7" cy="15" r="1.6"/><circle cx="13" cy="15" r="1.6"/></svg>',
@@ -44,8 +44,11 @@ function toast(message, kind = "") {
   $toasts.append(t);
   setTimeout(() => t.remove(), kind === "bad" ? 7000 : 4500);
 }
+// Hosted editors serve the API under another path (e.g. /api/admin); the page says where with <meta name="ve-api-base">.
+const API_BASE = (document.querySelector('meta[name="ve-api-base"]')?.content || "/api").replace(/\/$/, "");
+const apiUrl = (url) => API_BASE + url.slice(4);
 async function api(method, url, body, raw) {
-  const res = await fetch(url, { method, credentials: "same-origin", headers: { "X-Requested-With": "ve-editor", ...(body && !raw ? { "Content-Type": "application/json" } : {}) }, body: body ? (raw ? body : JSON.stringify(body)) : undefined });
+  const res = await fetch(apiUrl(url), { method, credentials: "same-origin", headers: { "X-Requested-With": "ve-editor", ...(body && !raw ? { "Content-Type": "application/json" } : {}) }, body: body ? (raw ? body : JSON.stringify(body)) : undefined });
   let data = {};
   try {
     data = await res.json();
@@ -100,11 +103,12 @@ function load(p) {
   state.undoCount = p.undoCount;
   state.siteUrl = p.siteUrl || "";
   state.uploadBase = p.uploadBase || "/uploads/";
+  state.maxUpload = p.maxUpload || 8 * 1024 * 1024;
   applyTheme();
 }
 async function boot() {
   try {
-    const s = await (await fetch("/api/session", { credentials: "same-origin" })).json();
+    const s = await (await fetch(apiUrl("/api/session"), { credentials: "same-origin" })).json();
     if (!s.signedIn) {
       state.phase = "signin";
       return render();
@@ -493,7 +497,7 @@ function drawer() {
   const photoMsg = h("p", { class: "error", role: "alert" }, err(eKey("images")) || "");
   async function upload(file) {
     if (!file) return;
-    if (file.size > 8 * 1024 * 1024) { photoMsg.textContent = "That photo is over 8 MB. Please choose a smaller one."; return; }
+    if (file.size > state.maxUpload) { photoMsg.textContent = `That photo is over ${Math.round(state.maxUpload / 1048576)} MB. Please choose a smaller one.`; return; }
     if (!/^image\/(jpeg|png|webp|avif)$/.test(file.type)) { photoMsg.textContent = "Please choose a JPG, PNG, WebP or AVIF photo."; return; }
     photoMsg.textContent = "Uploading…";
     try {
@@ -505,7 +509,7 @@ function drawer() {
   }
   const drop = h("label", { class: "drop", ondragover: (e) => { e.preventDefault(); drop.classList.add("over"); }, ondragleave: () => drop.classList.remove("over"), ondrop: (e) => { e.preventDefault(); drop.classList.remove("over"); upload(e.dataTransfer.files[0]); } },
     h("input", { type: "file", accept: "image/jpeg,image/png,image/webp,image/avif", "aria-label": "Upload a photo", onchange: (e) => upload(e.target.files[0]) }),
-    h("strong", {}, "Drop a photo here, or tap to choose"), h("span", { class: "help" }, "JPG, PNG, WebP or AVIF, up to 8 MB. Transparent PNG/WebP looks best on tinted cards."));
+    h("strong", {}, "Drop a photo here, or tap to choose"), h("span", { class: "help" }, `JPG, PNG, WebP or AVIF, up to ${Math.round(state.maxUpload / 1048576)} MB. Transparent PNG/WebP looks best on tinted cards.`));
   const photos = h("div", { class: "field" }, h("span", { class: "lbl" }, "Photos"),
     h("ul", { class: "photos" }, p.images.map((im, j) => h("li", { class: "photo" },
       h("div", { class: "pimg", style: `background:${C().theme?.tints?.[p.tint] || "#eee"}` }, h("img", { src: im.src, alt: "" })),

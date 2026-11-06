@@ -21,7 +21,19 @@ Every thrown error and CLI failure carries a stable `VE_*` code. Search for the 
 | `VE_ADMIN_NO_PASSWORD` | `admin set` | nothing on stdin and no `VE_ADMIN_PASSWORD` | pipe the password in |
 | `VE_ADMIN_WEAK_PASSWORD` | `admin set` | under 10 characters | use a longer password |
 | `VE_ADMIN_SAVE_FAILED` | `admin set` | couldn't write the admins file | check permissions on `~/.config/ve-backend/` or `VE_ADMINS_FILE` |
-| `VE_ADMIN_BAD_COMMAND` | `admin` | unknown subcommand | `set`, `list` or `remove` |
+| `VE_ADMIN_BAD_COMMAND` | `admin`, `hosted-user` | unknown subcommand | `set`/`add`, `list` or `remove` |
+| `VE_HOSTED_NO_STORAGE` | `createHostedEditor` | no `storage` adapter passed | pass `vercelBlobStorage({ prefix })` |
+| `VE_HOSTED_NO_SEED` | `createHostedEditor` | no `seed` catalog passed | import `ve.catalog.json` and pass it as `seed` |
+| `VE_HOSTED_NO_BLOB_PACKAGE` | hosted storage | `@vercel/blob` isn't installed | `npm i @vercel/blob` |
+| `VE_HOSTED_NO_SESSION_SECRET` | hosted editor (HTTP 500) | `VE_SESSION_SECRET` missing or under 32 characters | set it (`openssl rand -base64 48`), redeploy |
+| `VE_HOSTED_NO_USERS` | hosted editor (HTTP 500) | `VE_ADMIN_USERS` missing or not a JSON object | `ve-backend hosted-user add <name>`, set the printed value, redeploy |
+| `VE_HOSTED_CSRF` | hosted editor (403) | write without same-origin `Origin` + `X-Requested-With: ve-editor` | use the editor UI from the same host; check a proxy isn't changing `Host`/`Origin` |
+| `VE_HOSTED_BAD_LOGIN` | hosted editor (401) | wrong username or password | retry; reset with `hosted-user add` and redeploy |
+| `VE_HOSTED_RATE_LIMITED` | hosted editor (429) | too many failed sign-ins | wait `Retry-After` seconds (max 15 min) |
+| `VE_HOSTED_HANDLER_FAILED` | hosted editor (500) | storage or handler crashed; the log line has the cause | check `BLOB_READ_WRITE_TOKEN`, store linked to the project, prefix; reads are safe to retry, check the editor before retrying a save |
+| `VE_HOSTED_STORED_INVALID` | public catalog (503) | the saved catalog no longer validates (library upgraded stricter) | sign in, fix the listed fields, save |
+| `VE_HOSTED_MEDIA_FAILED` | media route (404) | photo read failed | check the prefix matches the one the upload used |
+| `VE_HOSTED_USER_UNKNOWN` | `hosted-user remove` | the name isn't in the current value | `hosted-user list` against the current `VE_ADMIN_USERS` |
 
 ## Symptoms without an error
 
@@ -37,3 +49,5 @@ Every thrown error and CLI failure carries a stable `VE_*` code. Search for the 
 | Fonts fall back to serif | `fontFaces[].src` path wrong, or font not in `public/` | fix the path; check the network tab |
 | Cart empty on another subdomain or port | `localStorage` is per origin | expected; use one origin |
 | Build fails after `npm update` | catalog rule tightened or API changed | read the error codes; check the release notes on GitHub |
+| Hosted site shows old text after a save | page is cached, or the text is baked into static HTML | hard reload; the page must read the live catalog (`docs/hosted.md`); SEO tags need a rebuild |
+| Hosted editor says "not set up yet" | missing env vars | read the `VE_HOSTED_*` code in the function log |

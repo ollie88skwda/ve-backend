@@ -5,10 +5,11 @@ import "../../src/styles.css";
 import { publicCatalog, themeCss } from "../../src/core.js";
 import { renderDataScript } from "../../src/render.js";
 import { ensureCatalog } from "../lib.js";
-interface Props { catalog: unknown; selector?: string; theme?: boolean }
-const { catalog: raw, selector = ":root", theme = true } = Astro.props;
+interface Props { catalog: unknown; selector?: string; theme?: boolean; live?: boolean | string }
+const { catalog: raw, selector = ":root", theme = true, live = false } = Astro.props;
 const catalog = ensureCatalog(raw);
 ---
 {theme && <style is:inline set:html={themeCss(catalog.theme, selector)} />}
+{live && <meta name="ve-live" content={typeof live === "string" ? live : "/api/catalog"} />}
 <Fragment set:html={renderDataScript(publicCatalog(catalog))} />
 <script>import "../../src/runtime.js";</script>

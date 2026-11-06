@@ -10,3 +10,4 @@ export function ProductPage(props: { catalog: Catalog; slug: string; crumbs?: bo
 export function CartButton(props: { catalog: Catalog; label?: string; className?: string }): ReactElement;
 export function Cart(props: { catalog: Catalog }): ReactElement;
 export function Checkout(props: { catalog: Catalog }): ReactElement;
+export function useLiveCatalog(url?: string): Catalog | null;

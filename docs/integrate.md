@@ -3,7 +3,7 @@
 ## 0. Install
 
 ```sh
-npm install github:ollie88skwda/ve-backend#semver:^0.2.0
+npm install github:ollie88skwda/ve-backend#semver:^0.3.0
 npx ve-backend init          # --astro or --html is auto-detected; add --force to overwrite
 ```
 

@@ -6,7 +6,7 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 
 - One JSON catalog (`ve.catalog.json`) drives product cards, category pages, product pages, a cart, and checkout.
 - Checkout is either an educational demo form (`demo`), a link to the company's VE Trade Show POS (`pos`), or both.
-- A local sales editor (`npx ve-backend editor`) lets humans edit the catalog with a live preview.
+- A local sales editor (`npx ve-backend editor`) lets humans edit the catalog with a live preview. The hosted editor (`ve-backend/hosted`, `docs/hosted.md`) serves the same editor from the live site on Vercel; the site overlays the saved catalog at runtime.
 - The catalog's `content` blocks make any page copy (hero slogan, banners, button labels) editable by admins in the editor's **Site content** tab. Agents decide which fields exist; admins change the values.
 - Source is plain ESM JavaScript + CSS with no build step. Astro components, React wrappers and plain-HTML custom elements all render the same HTML from `src/render.js`.
 
@@ -17,9 +17,10 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 3. `docs/integrate.md`: adding ve-backend to an Astro, Next/React or plain HTML site.
 4. `docs/content.md`: making any page section (hero slogan, banners, button text) editable by admins.
 5. `docs/catalog.md`: every catalog field, with validation rules.
-6. `docs/editor.md`: sales editor, logins, passcodes.
-7. `docs/troubleshooting.md`: stable error codes and fixes.
-8. `docs/maintaining.md`: only if you are changing this library itself (releases, tests).
+6. `docs/editor.md`: local sales editor, logins, passcodes.
+7. `docs/hosted.md`: hosted editor on Vercel so the live site can be edited online (users, Blob, routes, live overlay, what needs a rebuild).
+8. `docs/troubleshooting.md`: stable error codes and fixes.
+9. `docs/maintaining.md`: only if you are changing this library itself (releases, tests).
 
 ## Golden rules
 
@@ -36,12 +37,13 @@ You are probably an AI coding agent asked to add a store to a Virtual Enterprise
 
 | Task | Do this |
 |---|---|
-| Add store to an Astro site | `npm install github:ollie88skwda/ve-backend#semver:^0.2.0` → `npx ve-backend init --astro` → edit catalog → `npx ve-backend validate` |
+| Add store to an Astro site | `npm install github:ollie88skwda/ve-backend#semver:^0.3.0` → `npx ve-backend init --astro` → edit catalog → `npx ve-backend validate` |
 | Add/edit a product | Edit `src/data/ve.catalog.json` (or `npm run editor`), then `npx ve-backend validate` |
 | Make cards match the brand | Set `theme` in the catalog (colors, fonts, `card`, `button`, `tints`), then fine-tune in site CSS. See `docs/customizing.md` |
 | "Make the hero/banner/text editable in ve-backend" | Add a block to `content` in the catalog, read it with `getContent()` in the component. See `docs/content.md` |
 | Show products on the home page | `<VeHead catalog={raw} />` once per page, then `<ProductGrid catalog={raw} category="…" />` |
 | Send buyers to the VE POS | `checkout.mode: "pos"` and `checkout.posUrl: "https://portal.veinternational.org/tradeshowpos/…/newsale/"` |
+| "The live site should be editable online" | Follow `docs/hosted.md`: `ve-backend/hosted` handlers + Blob store + `ve-backend hosted-user add`; read the live catalog with `useLiveCatalog` / `<VeHead live />`. New slugs still need a rebuild |
 | Update the library in a site | `npm update ve-backend` then rebuild and rerun the checklist |
 
 ## Verification checklist (run before saying you're done)
@@ -68,7 +70,9 @@ src/styles.css     default store styles, all values from --ve-* variables
 astro/             Astro components, ensureCatalog(), integration that injects shop routes
 react/             thin React wrappers around render.js
 editor/            sales editor server (node:http) + UI in editor/public/
-bin/ve-backend.mjs CLI: init, editor, validate, admin
+hosted/            hosted editor: Web-standard handlers, auth, storage adapters (ve-backend/hosted)
+src/live.js        runtime fetch of the hosted public catalog (ve-backend/live)
+bin/ve-backend.mjs CLI: init, editor, validate, admin, hosted-user
 templates/         files `init` copies into a site
 examples/          demo Astro site and a plain HTML page
 types/             .d.ts for every entry point

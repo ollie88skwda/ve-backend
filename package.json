@@ -60,13 +60,22 @@
     "./astro/components/*": "./astro/components/*",
     "./editor": "./editor/server.mjs",
     "./templates/*": "./templates/*",
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./hosted": {
+      "types": "./types/hosted.d.ts",
+      "default": "./hosted/index.js"
+    },
+    "./live": {
+      "types": "./types/live.d.ts",
+      "default": "./src/live.js"
+    }
   },
   "files": [
     "src",
     "astro",
     "react",
     "editor",
+    "hosted",
     "bin",
     "templates",
     "types",
