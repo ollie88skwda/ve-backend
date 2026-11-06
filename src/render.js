@@ -4,6 +4,8 @@
 import {
   cartTotals,
   categoryUrl,
+  buyLinkFor,
+  cartEnabled,
   checkoutModeFor,
   defaultSelection,
   findCategory,
@@ -79,10 +81,14 @@ export function renderProductCard(catalog, product, opts = {}) {
     : product.tagline
       ? `<p class="ve-card-meta">${esc(product.tagline)}</p>`
       : "";
+  const noCart = !cartEnabled(catalog);
+  const buy = buyLinkFor(catalog, product);
   const actions =
     opts.actions === false
       ? ""
-      : `<div class="ve-card-actions">${
+      : noCart
+        ? `<div class="ve-card-actions"><a class="ve-button" href="${esc(buy.href)}"${buy.pos ? ` data-ve-pos="${esc(product.slug)}" target="_blank" rel="noreferrer"` : ""}>Buy now${buy.pos ? ICONS.external : ICONS.arrow}<span class="ve-sr">: ${esc(product.name)}</span></a></div>`
+        : `<div class="ve-card-actions">${
           showBuy
             ? `<a class="ve-button" href="${esc(pos)}" data-ve-pos="${esc(product.slug)}">Buy now ${ICONS.arrow}</a>`
             : ""
@@ -203,7 +209,14 @@ export function renderProductPage(catalog, slug, opts = {}) {
     ...(product.images?.[0] && catalog.company.url ? { image: new URL(product.images[0].src, catalog.company.url).href } : {}),
     offers: { "@type": "Offer", price: product.price.toFixed(2), priceCurrency: catalog.company.currency },
   };
-  const buyBox = `<form class="ve-buybox" data-ve-product-form="${esc(product.slug)}" novalidate>
+  const noCart = !cartEnabled(catalog);
+  const buy = buyLinkFor(catalog, product);
+  const buyBox = noCart
+    ? `<div class="ve-buybox" data-ve-submit>
+<div class="ve-buy-actions"><a class="ve-button ve-button--wide" href="${esc(buy.href)}" data-ve-buy="${esc(product.slug)}"${buy.pos ? ` data-ve-pos="${esc(product.slug)}" target="_blank" rel="noreferrer"` : ""}>Buy now ${buy.pos ? ICONS.external : ICONS.arrow}</a></div>
+<p class="ve-note">${esc(catalog.checkout.note)}</p>
+</div>`
+    : `<form class="ve-buybox" data-ve-product-form="${esc(product.slug)}" novalidate>
 ${renderOptions(catalog, product)}
 <div class="ve-field"><span class="ve-label" id="ve-qty-${esc(product.slug)}">Quantity</span>${renderStepper(`${product.name} quantity`)}</div>
 <div class="ve-buy-actions" data-ve-submit>
@@ -235,12 +248,13 @@ ${catalog.contact.email ? `<p class="ve-note">Questions? <a href="mailto:${esc(c
 </div>
 </div>
 ${related.length ? `<section class="ve-related" aria-labelledby="ve-related-title"><h2 id="ve-related-title" class="ve-subhead">${cat ? `More ${esc(cat.name.toLowerCase())}` : "You may also like"}</h2>${renderProductGrid(catalog, { products: related, headingLevel: 3, reveal: opts.reveal, cardStyle: opts.cardStyle })}</section>` : ""}
-<div class="ve-stickybar" data-ve-stickybar aria-hidden="true" inert><div><strong>${esc(product.name)}</strong><span data-ve-price>${money(catalog, product.price)}</span></div><button type="button" class="ve-button" data-ve-sticky-add="${esc(product.slug)}">Add to cart</button></div>
+${noCart ? "" : `<div class="ve-stickybar" data-ve-stickybar aria-hidden="true" inert><div><strong>${esc(product.name)}</strong><span data-ve-price>${money(catalog, product.price)}</span></div><button type="button" class="ve-button" data-ve-sticky-add="${esc(product.slug)}">Add to cart</button></div>`}
 </div>`;
 }
 
 /** Header cart button. The runtime fills in the count. */
 export function renderCartButton(catalog, { label = "Cart", className = "" } = {}) {
+  if (!cartEnabled(catalog)) return "";
   return `<ve-cart-button><a class="ve-cart-button${className ? ` ${esc(className)}` : ""}" href="${esc(catalog.shop.cartPath)}" aria-label="${esc(label)}, 0 items" data-ve-cart-link>${ICONS.bag}<span class="ve-cart-label">${esc(label)}</span><span class="ve-cart-count" data-ve-count hidden>0</span></a></ve-cart-button>`;
 }
 

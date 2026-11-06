@@ -52,7 +52,7 @@ export interface Catalog {
   shop: { title: string; intro?: string; basePath: string; cartPath: string; checkoutPath: string; allLabel: string };
   announcement: { enabled: boolean; text: string; linkLabel: string; link: string };
   contact: { email: string; phone: string; location: string; hours: string; instagram: string };
-  checkout: { mode: CheckoutMode; posUrl: string; orderPrefix: string; posLabel: string; note: string };
+  checkout: { mode: CheckoutMode; posUrl: string; orderPrefix: string; posLabel: string; note: string; /** false = no cart: Buy goes to the POS link, or the product page when none is set. Default true. */ cart: boolean };
   theme: Theme;
   content: ContentBlock[];
   categories: Category[];
@@ -81,6 +81,8 @@ export function visibleProducts(catalog: Catalog, category?: string): Product[];
 export function findProduct(catalog: Catalog, slug: string): Product | null;
 export function findCategory(catalog: Catalog, slug: string): Category | null;
 export function productUrl(catalog: Catalog, product: Product): string;
+export function cartEnabled(catalog: Catalog): boolean;
+export function buyLinkFor(catalog: Catalog, product: Product): { href: string; external: boolean; pos: boolean };
 export function categoryUrl(catalog: Catalog, category: Category): string;
 export function getShopPaths(catalog: Catalog): { params: { slug: string }; props: { kind: "category" | "product"; slug: string } }[];
 export function formatMoney(catalog: Catalog, value: number): string;

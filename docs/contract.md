@@ -69,6 +69,10 @@ Products with options must link to their product page ("Choose options") instead
 
 You normally restyle these with CSS rather than replacing them. If you must replace the cart or checkout markup, render from `window.veCart` (below) and keep these attributes.
 
+### No-cart mode (`checkout.cart: false`)
+
+Cards and product pages render a plain link instead of the cart controls: `<a data-ve-pos="<slug>" href="<posUrl>">` when a POS link exists, otherwise a link to the product page (no `data-ve-*` needed). `data-ve-add`, `data-ve-product-form`, `data-ve-step`, options, the sticky add bar and `<ve-cart-button>` are not rendered. Custom markup should use `buyLinkFor(catalog, product)` (`ve-backend`) to get `{ href, external, pos }`, and `cartEnabled(catalog)`.
+
 ## 4. JavaScript API
 
 ```js
@@ -95,6 +99,7 @@ Use these to drive custom UI (a cart drawer, a confetti burst, an analytics ping
 - Prices are numbers with at most 2 decimals. `compareAt` must be higher than `price`.
 - `checkout.mode` is `demo`, `pos` or `both`; `pos`/`both` require `checkout.posUrl` (https).
 - `placeholder: true` marks an unconfirmed price; the card shows "Placeholder price, to be confirmed". Remove the flag only when a human confirms the price.
+- `checkout.cart` defaults to `true`; `false` is the no-cart mode above.
 - `checkout.note` keeps the educational disclaimer.
 - `content` block and field `id`s are read by page code; never rename or remove one without updating the component that reads it.
 

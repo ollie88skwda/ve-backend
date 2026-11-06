@@ -72,7 +72,7 @@ export const DEFAULT_CATALOG = {
   shop: { title: "Shop", intro: "", basePath: "/shop/", cartPath: "/cart/", checkoutPath: "/checkout/", allLabel: "All products" },
   announcement: { enabled: false, text: "", linkLabel: "", link: "" },
   contact: { email: "", phone: "", location: "", hours: "", instagram: "" },
-  checkout: { mode: "demo", posUrl: "", orderPrefix: "VE", posLabel: "Pay in VE Trade Show POS", note: "Educational Virtual Enterprise store. No real payment is taken and nothing ships." },
+  checkout: { mode: "demo", posUrl: "", orderPrefix: "VE", posLabel: "Pay in VE Trade Show POS", note: "Educational Virtual Enterprise store. No real payment is taken and nothing ships.", cart: true },
   theme: DEFAULT_THEME,
   content: [],
   categories: [],
@@ -200,8 +200,9 @@ export function validateCatalog(input) {
     orderPrefix: text(ck.orderPrefix || "VE", "checkout.orderPrefix", { label: "Order prefix", max: 6 }).toUpperCase(),
     posLabel: text(ck.posLabel || "Pay in VE Trade Show POS", "checkout.posLabel", { label: "POS button label", max: 40 }),
     note: text(ck.note ?? DEFAULT_CATALOG.checkout.note, "checkout.note", { label: "Checkout note", max: 240 }),
+    cart: ck.cart !== false,
   };
-  if (out.checkout.mode !== "demo" && !out.checkout.posUrl) err("checkout.posUrl", "POS checkout needs your VE Trade Show POS new-sale link (https://portal.veinternational.org/...).");
+  if (out.checkout.cart && out.checkout.mode !== "demo" && !out.checkout.posUrl) err("checkout.posUrl", "POS checkout needs your VE Trade Show POS new-sale link (https://portal.veinternational.org/...).");
   if (!/^[A-Z0-9]{1,6}$/.test(out.checkout.orderPrefix)) err("checkout.orderPrefix", "Order prefix: letters and numbers only, up to 6.");
 
   out.theme = validateTheme(input.theme || {}, err);
@@ -607,6 +608,20 @@ export function cartTotals(lines, catalog) {
     total: subtotal,
     hasPlaceholder: items.some((i) => i.product.placeholder),
   };
+}
+
+/** True unless the catalog sets `checkout.cart: false` (no cart; Buy goes to the POS link or the product page). */
+export const cartEnabled = (catalog) => catalog.checkout?.cart !== false;
+
+/**
+ * Where a Buy button for a product goes. With the cart on it is the product's POS link (if any).
+ * With `checkout.cart: false` it is the POS link (product.posUrl, then checkout.posUrl) or, when none is set, the product page.
+ * Returns { href, external, pos } where `pos` is true when href is a POS link.
+ */
+export function buyLinkFor(catalog, product) {
+  const pos = product.posUrl || catalog.checkout.posUrl;
+  if (pos) return { href: pos, external: true, pos: true };
+  return { href: productUrl(catalog, product), external: false, pos: false };
 }
 
 /** Which checkout a cart uses: product overrides win when every item agrees. */

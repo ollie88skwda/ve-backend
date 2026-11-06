@@ -50,6 +50,7 @@ Default location: `src/data/ve.catalog.json`. Override with `--catalog`, or `"ve
 | `posUrl` | https, required unless `demo` | the company's VE Trade Show POS **new sale** link, e.g. `https://portal.veinternational.org/tradeshowpos/<id>/newsale/` |
 | `posLabel` | ≤40 | POS button text |
 | `orderPrefix` | 1–6 letters/numbers | demo order numbers like `EB-7K2M9Q` |
+| `cart` | boolean, default `true` | `false` = no-cart mode: no Add to cart, quantity, options, sticky add bar or cart button. Every Buy button is a link to the POS (`product.posUrl`, then `checkout.posUrl`) or, if none is set, to the product page. `posUrl` is optional in this mode |
 | `note` | ≤240 | educational disclaimer shown in the buy box and checkout. Keep it |
 
 Per-product `checkout` and `posUrl` override these (e.g. bundles go to POS, everything else uses the demo).

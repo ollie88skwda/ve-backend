@@ -70,3 +70,26 @@ test("confirmation and POS panel list the order lines", () => {
   assert.match(pos, /3 × A &lt;b&gt;/);
   assert.match(pos, /\$30\.00/);
 });
+
+test("no-cart mode: Buy links to the POS or the product page, no cart controls", async () => {
+  const { renderProductCard, renderProductPage, renderCartButton } = await import("../src/render.js");
+  const { buyLinkFor, cartEnabled } = await import("../src/core.js");
+  const base = { company: { name: "T" }, categories: [], products: [{ slug: "a", name: "A", price: 10, options: [{ name: "Scent", values: [{ label: "X" }] }] }] };
+  const noPos = loadCatalog({ ...base, checkout: { mode: "demo", cart: false } });
+  assert.equal(cartEnabled(noPos), false);
+  assert.deepEqual(buyLinkFor(noPos, noPos.products[0]), { href: "/shop/a/", external: false, pos: false });
+  const card = renderProductCard(noPos, noPos.products[0]);
+  assert.match(card, /href="\/shop\/a\/"[^>]*>Buy now/);
+  assert.doesNotMatch(card, /data-ve-add|Add to cart|data-ve-pos/);
+  const page = renderProductPage(noPos, "a");
+  assert.doesNotMatch(page, /data-ve-product-form|data-ve-step|data-ve-option|Add to cart|data-ve-stickybar/);
+  assert.match(page, /data-ve-buy="a"/);
+  assert.equal(renderCartButton(noPos), "");
+  const pos = loadCatalog({ ...base, checkout: { mode: "demo", cart: false, posUrl: "https://portal.veinternational.org/tradeshowpos/x/newsale/" } });
+  assert.deepEqual(buyLinkFor(pos, pos.products[0]), { href: "https://portal.veinternational.org/tradeshowpos/x/newsale/", external: true, pos: true });
+  assert.match(renderProductCard(pos, pos.products[0]), /data-ve-pos="a"/);
+  // cart stays on by default, and pos mode still needs a link when the cart is on
+  assert.equal(loadCatalog(base).checkout.cart, true);
+  assert.throws(() => loadCatalog({ ...base, checkout: { mode: "pos" } }));
+  assert.doesNotThrow(() => loadCatalog({ ...base, checkout: { mode: "pos", cart: false } }));
+});

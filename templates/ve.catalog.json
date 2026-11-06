@@ -4,7 +4,7 @@
   "shop": { "title": "Shop", "intro": "Everything we make, in one place.", "basePath": "/shop/", "cartPath": "/cart/", "checkoutPath": "/checkout/", "allLabel": "All products" },
   "announcement": { "enabled": false, "text": "", "linkLabel": "", "link": "" },
   "contact": { "email": "hello@example.com", "phone": "", "location": "", "hours": "", "instagram": "" },
-  "checkout": { "mode": "demo", "posUrl": "", "orderPrefix": "VE", "posLabel": "Pay in VE Trade Show POS", "note": "Educational Virtual Enterprise store. No real payment is taken and nothing ships." },
+  "checkout": { "mode": "demo", "posUrl": "", "orderPrefix": "VE", "posLabel": "Pay in VE Trade Show POS", "note": "Educational Virtual Enterprise store. No real payment is taken and nothing ships.", "cart": true },
   "theme": {
     "colors": { "background": "#ffffff", "surface": "#f5f3ef", "text": "#24262b", "muted": "#5e626a", "heading": "#24262b", "accent": "#24262b", "accentText": "#ffffff", "accentHover": "#4a4f58", "badge": "#24262b", "badgeText": "#ffffff", "sale": "#a12620", "border": "#dcdad5", "focus": "#24262b" },
     "fonts": { "display": "Georgia, serif", "body": "system-ui, sans-serif", "accent": "Georgia, serif" },
